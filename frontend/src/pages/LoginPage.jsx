@@ -62,7 +62,7 @@ export default function LoginPage() {
       window.google.accounts.id.renderButton(googleBtnRef.current, {
         theme: 'filled_black',
         size: 'large',
-        width: 336,
+        width: Math.max(200, Math.min(336, Math.floor(googleBtnRef.current.parentElement.offsetWidth))),
         shape: 'pill',
         text: 'continue_with',
       });
@@ -86,7 +86,7 @@ export default function LoginPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f] relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f] relative overflow-hidden px-4 py-8 sm:px-6">
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-60 -right-60 w-[600px] h-[600px] bg-white/4 rounded-full blur-3xl" />
         <div className="absolute -bottom-60 -left-60 w-[600px] h-[600px] bg-white/3 rounded-full blur-3xl" />
@@ -94,16 +94,16 @@ export default function LoginPage() {
           style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
       </div>
 
-      <div className="relative z-10 w-full max-w-md px-4 animate-fade-in">
+      <div className="relative z-10 w-full max-w-md animate-fade-in">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-6 sm:mb-8">
           <img src="/logo.jpg" alt="LiveTake"
-            className="w-24 h-24 rounded-2xl object-cover mb-4"
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover mb-4"
             style={{ boxShadow: '0 0 80px rgba(255,255,255,0.12), 0 0 30px rgba(255,255,255,0.06)' }} />
-          <p className="text-white/30 text-xs tracking-[0.3em] uppercase">Project Management System</p>
+          <p className="text-white/30 text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase text-center">Project Management System</p>
         </div>
 
-        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-7 backdrop-blur-sm">
+        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 sm:p-7 backdrop-blur-sm">
           <h2 className="text-xl font-bold text-white mb-1">Sign in</h2>
           <p className="text-white/40 text-sm mb-6">Enter your credentials to continue</p>
 
@@ -144,7 +144,7 @@ export default function LoginPage() {
           </div>
 
           {/* Google Sign-In button gets rendered into this div by Google's script */}
-          <div className="flex justify-center">
+          <div className="flex justify-center w-full overflow-hidden">
             <div ref={googleBtnRef} />
           </div>
 
