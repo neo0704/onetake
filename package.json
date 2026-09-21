@@ -1,0 +1,19 @@
+{
+  "name": "onetake",
+  "version": "1.0.0",
+  "description": "OneTake Event Management System",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "dependencies": {
+    "google-auth-library": "^11.0.0",
+    "multer": "^2.1.1",
+    "nodemailer": "^9.0.4"
+  }
+}

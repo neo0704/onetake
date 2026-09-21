@@ -1,0 +1,18 @@
+const express = require('express');
+const router = express.Router();
+const { register, login, googleLogin, getMe, updateProfile, updateFCMToken, verifyEmail, resendVerification, approveFreelancer, getPendingFreelancers, forgotPassword, resetPassword, changePassword } = require('../controllers/authController');
+const { protect } = require('../middleware/auth');
+router.post('/register', register);
+router.post('/login', login);
+router.post('/google', googleLogin);
+router.post('/verify-email', verifyEmail);
+router.post('/resend-verification', resendVerification);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
+router.get('/pending-freelancers', protect, getPendingFreelancers);
+router.put('/approve/:id', protect, approveFreelancer);
+router.get('/me', protect, getMe);
+router.put('/profile', protect, updateProfile);
+router.put('/fcm-token', protect, updateFCMToken);
+router.put('/change-password', protect, changePassword);
+module.exports = router;

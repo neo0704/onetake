@@ -1,0 +1,10 @@
+const express = require('express');
+const router = express.Router();
+const ctrl = require('../controllers/paymentController');
+const { protect, authorize } = require('../middleware/auth');
+router.post('/', protect, authorize('client'), ctrl.upload.single('proof'), ctrl.submitPayment);
+router.get('/', protect, ctrl.getPayments);
+router.get('/summary/:eventId', protect, ctrl.getPaymentSummary);
+router.get('/:id', protect, ctrl.getPayment);
+router.put('/:id/verify', protect, authorize('admin'), ctrl.verifyPayment);
+module.exports = router;

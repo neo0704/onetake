@@ -1,0 +1,19 @@
+# Dependencies — reinstalled from package.json, never commit
+node_modules/
+
+# Secrets — real values live only on your machine and in your host's env settings
+.env
+.env.local
+
+# User-uploaded files — avatars, check-in photos, message attachments.
+# These are generated at runtime, not source code, and belong on a
+# persistent disk on your host — not in git history.
+uploads/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS/editor junk
+.DS_Store
+.vscode/
