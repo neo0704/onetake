@@ -177,12 +177,18 @@ export default function AdminMeetings() {
 
   const selectedEvent = events.find(ev => ev._id === form.eventId) || null;
   const minDateTime = toLocalInputValue(new Date());
-  const maxDateTime = selectedEvent?.eventDate ? toLocalInputValue(selectedEvent.eventDate) : undefined;
+  // Only limit the date to the event's date if that date is still ahead of us.
+  // If the event is today or already past, min would end up AFTER max — an impossible
+  // range that can freeze or crash the phone's date picker — so we skip the limit.
+  const eventMaxValue = selectedEvent?.eventDate ? toLocalInputValue(selectedEvent.eventDate) : '';
+  const maxDateTime = eventMaxValue && eventMaxValue >= minDateTime ? eventMaxValue : undefined;
+  const eventDatePassed = Boolean(eventMaxValue) && !maxDateTime;
 
   const handleEventChange = (eventId) => {
     const ev = events.find(e => e._id === eventId) || null;
     setForm(f => {
-      const eventMax = ev?.eventDate ? new Date(ev.eventDate).getTime() : null;
+      const rawMax   = ev?.eventDate ? new Date(ev.eventDate).getTime() : null;
+      const eventMax = rawMax && rawMax >= Date.now() ? rawMax : null;   // ignore past event dates
       const currentTime = f.scheduledAt ? new Date(f.scheduledAt).getTime() : null;
       const stillValid = !eventMax || !currentTime || currentTime <= eventMax;
       return { ...f, eventId, scheduledAt: stillValid ? f.scheduledAt : '' };
@@ -205,12 +211,19 @@ export default function AdminMeetings() {
 
   const submit = async (e) => {
     e.preventDefault();
+    const when = new Date(form.scheduledAt);
+    if (isNaN(when.getTime())) {
+      toast.error('Please pick a valid date and time');
+      return;
+    }
+    // Send an ISO time (with timezone) so the server doesn't read it in its own timezone
+    const payload = { ...form, scheduledAt: when.toISOString(), participantIds: selectedParticipants };
     try {
       if (approvingMeeting) {
-        await api.patch(`/meetings/${approvingMeeting._id}/approve`, { ...form, participantIds: selectedParticipants });
+        await api.patch(`/meetings/${approvingMeeting._id}/approve`, payload);
         toast.success('Meeting confirmed!');
       } else {
-        await api.post('/meetings', { ...form, participantIds: selectedParticipants });
+        await api.post('/meetings', payload);
         toast.success('Meeting scheduled!');
       }
       closeModal();
@@ -363,7 +376,7 @@ export default function AdminMeetings() {
             <label className="label">Meeting Title</label>
             <input className="input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required placeholder="Project Details Call" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Date & Time</label>
               <input
@@ -375,8 +388,11 @@ export default function AdminMeetings() {
                 max={maxDateTime}
                 required
               />
-              {selectedEvent?.eventDate && (
+              {maxDateTime && (
                 <p className="text-white/30 text-xs mt-1">Must be on or before {selectedEvent.eventName}'s date</p>
+              )}
+              {eventDatePassed && (
+                <p className="text-white/30 text-xs mt-1">{selectedEvent.eventName}'s date has passed — pick any future time.</p>
               )}
             </div>
             <div>
