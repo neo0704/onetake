@@ -100,6 +100,7 @@ const IconArrow  = () => <svg width="15" height="15" fill="none" stroke="current
 const IconSignIn = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>;
 const IconPlay   = () => <svg width="28" height="28" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>;
 const IconClose  = () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>;
+const IconMenu   = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>;
 const IconGrid   = () => <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z"/></svg>;
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
@@ -114,7 +115,7 @@ const css = `
     --darker: #080810;
     --card:   #12121f;
     --border: rgba(255,255,255,0.08);
-    --muted:  rgba(255,255,255,0.45);
+    --muted:  rgba(255,255,255,0.62);
     background: var(--darker);
     color: #fff;
     font-family: 'DM Sans', sans-serif;
@@ -154,7 +155,7 @@ const css = `
 
   /* HERO */
   .ot-hero {
-    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:100vh; min-height:100svh; display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:140px 48px 100px; position:relative; overflow:hidden;
   }
   .ot-hero-glow {
@@ -208,7 +209,7 @@ const css = `
   .ot-scroll-hint {
     position:absolute; bottom:36px; left:50%; transform:translateX(-50%);
     display:flex; flex-direction:column; align-items:center; gap:8px;
-    color:rgba(255,255,255,0.18); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; z-index:2;
+    color:rgba(255,255,255,0.35); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; z-index:2;
     animation:fadeUp 1s ease 1s both;
   }
   .ot-scroll-line { width:1px; height:40px; background:linear-gradient(to bottom, rgba(255,255,255,0.28), transparent); animation:dropLine 2s ease-in-out infinite; }
@@ -450,11 +451,14 @@ const css = `
   .ot-modal-backdrop {
     position: fixed; inset: 0; z-index: 1000;
     background: rgba(0,0,0,0.88);
-    display: flex; align-items: flex-start; justify-content: center;
-    overflow-y: auto;
-    padding: 40px 20px;
     backdrop-filter: blur(10px);
     animation: fadeIn 0.25s ease;
+  }
+  .ot-modal-scroll {
+    position: absolute; inset: 0; overflow-y: auto;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 40px 20px;
+    overscroll-behavior: contain;
   }
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
   .ot-modal {
@@ -468,8 +472,8 @@ const css = `
   }
   @keyframes slideUp { from{opacity:0;transform:translateY(32px)} to{opacity:1;transform:translateY(0)} }
   .ot-modal-close {
-    position: absolute; top: 20px; right: 20px; z-index: 10;
-    width: 40px; height: 40px; background: rgba(0,0,0,0.5);
+    position: absolute; top: 16px; right: 16px; z-index: 20;
+    width: 44px; height: 44px; background: rgba(0,0,0,0.75);
     border: 1px solid rgba(255,255,255,0.1); border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     color: #fff; cursor: pointer; transition: all 0.2s;
@@ -485,7 +489,7 @@ const css = `
   .ot-modal-tags { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
   .ot-modal-tag { padding:5px 14px; background:rgba(233,69,96,0.08); border:1px solid rgba(233,69,96,0.22); border-radius:100px; font-size:11px; font-weight:600; color:var(--red2); }
   .ot-modal-desc { font-size:14px; line-height:1.8; color:var(--muted); margin-bottom:32px; }
-  .ot-modal-gallery-label { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.3); margin-bottom:14px; }
+  .ot-modal-gallery-label { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:14px; }
   .ot-modal-gallery { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
   .ot-modal-gallery-item { aspect-ratio:4/3; overflow:hidden; border-radius:10px; cursor:pointer; position:relative; background:#0a0a14; }
   .ot-modal-gallery-item img { width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.4s ease; }
@@ -522,10 +526,38 @@ const css = `
   .ot-footer { background:var(--darker); border-top:1px solid var(--border); padding:40px 48px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:20px; }
   .ot-footer-logo { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:5px; color:#fff; }
   .ot-footer-logo em { color:var(--red); font-style:normal; }
-  .ot-footer-copy { font-size:12px; color:rgba(255,255,255,0.2); }
-  .ot-footer-contact { font-size:12px; color:rgba(255,255,255,0.2); }
+  .ot-footer-copy { font-size:13px; color:rgba(255,255,255,0.5); }
+  .ot-footer-contact { font-size:13px; color:rgba(255,255,255,0.5); display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:center; }
+  .ot-footer-contact a { color:rgba(255,255,255,0.7); text-decoration:none; transition:color 0.2s; }
+  .ot-footer-contact a:hover { color:var(--red2); text-decoration:underline; }
 
   @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+  /* NAV LINKS + MOBILE MENU */
+  .ot-nav-links { display:flex; gap:2px; margin-right:8px; }
+  .ot-nav-link { background:none; border:none; color:rgba(255,255,255,0.7); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; padding:10px 14px; cursor:pointer; border-radius:8px; transition:color 0.2s, background 0.2s; }
+  .ot-nav-link:hover { color:#fff; background:rgba(255,255,255,0.06); }
+  .ot-burger { display:none; align-items:center; justify-content:center; width:44px; height:44px; background:transparent; border:1px solid var(--border); border-radius:8px; color:#fff; cursor:pointer; }
+  .ot-drawer { position:fixed; top:68px; left:0; right:0; z-index:190; background:rgba(8,8,16,0.98); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); padding:8px 20px 20px; display:flex; flex-direction:column; animation:fadeIn 0.2s ease; }
+  .ot-drawer button { background:none; border:none; border-bottom:1px solid var(--border); color:rgba(255,255,255,0.85); font-family:'DM Sans',sans-serif; font-size:16px; font-weight:500; text-align:left; padding:16px 4px; min-height:52px; cursor:pointer; display:flex; align-items:center; gap:10px; }
+  .ot-drawer button:last-child { border-bottom:none; }
+
+  /* Anchored sections stop below the fixed nav */
+  .ot-section, .ot-how, .ot-portfolio-wrap { scroll-margin-top:68px; }
+
+  /* Keyboard focus + touch */
+  .ot-root button:focus-visible,
+  .ot-root a:focus-visible,
+  .ot-root [role="button"]:focus-visible { outline:2px solid var(--red2); outline-offset:3px; }
+  .ot-root button, .ot-root [role="button"] { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  .ot-svc-icon, .ot-proj-card, .ot-proj-hero { -webkit-tap-highlight-color:transparent; }
+
+  @media (min-width:769px) { .ot-drawer { display:none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ot-root *, .ot-root *::before, .ot-root *::after { animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
+    .ot-svc, .ot-step { opacity:1; transform:none; }
+  }
 
   /* RESPONSIVE */
   @media (max-width:900px) {
@@ -551,6 +583,47 @@ const css = `
     .ot-modal-body { padding:24px 20px; }
     .ot-modal-gallery { grid-template-columns:repeat(2,1fr); }
     .ot-video-section { padding:72px 20px; }
+
+    /* Nav: compact logo + one primary button + menu */
+    .ot-logo { font-size:22px; letter-spacing:4px; }
+    .ot-nav-right { gap:8px; }
+    .ot-nav-links, .ot-hide-mobile { display:none; }
+    .ot-burger { display:inline-flex; }
+    .ot-btn-red { padding:9px 14px; font-size:13px; }
+
+    /* Hero: title must fit a 360px screen, buttons full-width */
+    .ot-hero-title { font-size:clamp(44px,15vw,100px); letter-spacing:3px; }
+    .ot-hero-sub { margin:20px 0 36px; }
+    .ot-hero-btns { flex-direction:column; align-items:stretch; width:100%; max-width:360px; }
+    .ot-cta-main, .ot-cta-out { width:100%; justify-content:center; padding:16px 24px; }
+    .ot-cta-btns { flex-direction:column; align-items:stretch; max-width:360px; margin:0 auto; }
+    .ot-cta-main-lg, .ot-cta-out-lg { width:100%; justify-content:center; padding:16px 24px; }
+    .ot-scroll-hint { display:none; }
+
+    /* Stats */
+    .ot-stat:nth-child(-n+2) { border-bottom:1px solid var(--border); }
+    .ot-stat-num { font-size:36px; }
+    .ot-stat-label { font-size:11px; }
+
+    /* Content */
+    .ot-svc { padding:24px; }
+    .ot-svc-desc { font-size:14px; }
+    .ot-step { flex-direction:row; align-items:flex-start; text-align:left; gap:16px; padding:0; }
+    .ot-step-num { margin-bottom:0; flex-shrink:0; }
+    .ot-step-title { font-size:15px; margin-bottom:4px; }
+    .ot-step-desc { font-size:13px; }
+    .ot-proj-hero-content { padding:24px 20px; }
+    .ot-proj-card-tag, .ot-proj-hero-tag-pill { font-size:11px; }
+
+    /* Project window fills the phone screen */
+    .ot-modal-scroll { padding:0; }
+    .ot-modal { border-radius:0; min-height:100%; }
+    .ot-modal-desc { font-size:15px; }
+    .ot-lightbox-nav { width:42px; height:42px; }
+    .ot-lightbox-prev { left:10px; }
+    .ot-lightbox-next { right:10px; }
+    .ot-lightbox-close { top:14px; right:14px; }
+    .ot-lightbox-img { max-width:100vw; border-radius:0; }
   }
 `;
 
@@ -561,10 +634,14 @@ export default function HomePage() {
   const [activeProj,  setActiveProj]  = useState(null);   // project modal
   const [lightbox,    setLightbox]    = useState({ open: false, images: [], idx: 0 });
   const [videoPlaying,setVideoPlaying]= useState(false);  // play embed on click
+  const [menuOpen,    setMenuOpen]    = useState(false);  // mobile menu
 
   const svcRefs  = useRef([]);
   const stepRefs = useRef([]);
   const portfolioRef = useRef(null);
+  const servicesRef  = useRef(null);
+  const howRef       = useRef(null);
+  const touchX       = useRef(null);
 
   // Fetch dynamic content
   useEffect(() => {
@@ -588,24 +665,59 @@ export default function HomePage() {
     return () => obs.disconnect();
   }, []);
 
-  // Close modal / lightbox on Esc
+  // Keyboard: Esc closes lightbox / project / menu, arrows flip photos
   useEffect(() => {
     const onKey = e => {
       if (e.key === 'Escape') {
         if (lightbox.open) { setLightbox(l => ({ ...l, open: false })); return; }
-        setActiveProj(null);
+        if (activeProj)    { setActiveProj(null); return; }
+        setMenuOpen(false);
       }
+      if (lightbox.open && e.key === 'ArrowLeft')  setLightbox(l => ({ ...l, idx: (l.idx - 1 + l.images.length) % l.images.length }));
+      if (lightbox.open && e.key === 'ArrowRight') setLightbox(l => ({ ...l, idx: (l.idx + 1) % l.images.length }));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [lightbox.open]);
+  }, [lightbox.open, activeProj]);
+
+  // Stop the page behind a project window / lightbox from scrolling
+  useEffect(() => {
+    document.body.style.overflow = (activeProj || lightbox.open) ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [activeProj, lightbox.open]);
+
+  // Close the mobile menu if the screen becomes wide
+  useEffect(() => {
+    const onResize = () => { if (window.innerWidth > 768) setMenuOpen(false); };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const openLightbox  = (images, idx) => setLightbox({ open: true, images, idx });
   const closeLightbox = () => setLightbox(l => ({ ...l, open: false }));
   const lbPrev = () => setLightbox(l => ({ ...l, idx: (l.idx - 1 + l.images.length) % l.images.length }));
   const lbNext = () => setLightbox(l => ({ ...l, idx: (l.idx + 1) % l.images.length }));
 
-  const openProject = (proj) => { setActiveProj(proj); setVideoPlaying(false); window.scrollTo(0,0); };
+  // Don't jump the page to the top when opening a project — the window sits on top of the page
+  const openProject = (proj) => { setActiveProj(proj); setVideoPlaying(false); };
+
+  const goTo = (ref) => { setMenuOpen(false); ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+
+  // Makes a clickable div work with keyboard (Enter / Space) and screen readers
+  const press = (fn) => ({
+    role: 'button',
+    tabIndex: 0,
+    onClick: fn,
+    onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } },
+  });
+
+  const onLbTouchStart = (e) => { touchX.current = e.touches[0].clientX; };
+  const onLbTouchEnd   = (e) => {
+    if (touchX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    touchX.current = null;
+    if (Math.abs(dx) > 50) { dx > 0 ? lbPrev() : lbNext(); }
+  };
 
   // Sort + split portfolio
   const allProjects = (content?.portfolio || [])
@@ -629,20 +741,37 @@ export default function HomePage() {
       <div className="ot-noise" />
 
       {/* NAV */}
-      <nav className={`ot-nav${scrolled ? ' scrolled' : ''}`}>
-        <span className="ot-logo">ONE<em>TAKE</em></span>
+      <nav className={`ot-nav${scrolled ? ' scrolled' : ''}`} aria-label="Main">
+        <a href="/" className="ot-logo" onClick={e => { e.preventDefault(); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+          ONE<em>TAKE</em>
+        </a>
         <div className="ot-nav-right">
-          <button className="ot-btn-ghost" onClick={() => portfolioRef.current?.scrollIntoView({ behavior: 'smooth' })}>
-            Portfolio
-          </button>
-          <button className="ot-btn-ghost" onClick={() => navigate('/login')}>
+          <div className="ot-nav-links">
+            <button className="ot-nav-link" onClick={() => goTo(servicesRef)}>Services</button>
+            <button className="ot-nav-link" onClick={() => goTo(howRef)}>How it works</button>
+            <button className="ot-nav-link" onClick={() => goTo(portfolioRef)}>Portfolio</button>
+          </div>
+          <button className="ot-btn-ghost ot-hide-mobile" onClick={() => navigate('/login')}>
             <IconSignIn /> Sign In
           </button>
           <button className="ot-btn-red" onClick={() => navigate('/client/inquiry')}>
             Get Started <IconArrow />
           </button>
+          <button className="ot-burger" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(o => !o)}>
+            {menuOpen ? <IconClose /> : <IconMenu />}
+          </button>
         </div>
       </nav>
+
+      {menuOpen && (
+        <div className="ot-drawer">
+          <button onClick={() => goTo(servicesRef)}>Services</button>
+          <button onClick={() => goTo(howRef)}>How it works</button>
+          <button onClick={() => goTo(portfolioRef)}>Portfolio</button>
+          <button onClick={() => { setMenuOpen(false); navigate('/login'); }}><IconSignIn /> Sign In</button>
+        </div>
+      )}
 
       {/* HERO */}
       <section className="ot-hero" style={{ maxWidth: '100%' }}>
@@ -660,7 +789,7 @@ export default function HomePage() {
         </p>
         <div className="ot-hero-btns">
           <button className="ot-cta-main" onClick={() => navigate('/client/inquiry')}>
-            Want to Inquire? Be Our Client
+            Inquire About Your Event
             <span className="ot-arrow"><IconArrow /></span>
           </button>
           <button className="ot-cta-out" onClick={() => navigate('/login')}>
@@ -683,7 +812,7 @@ export default function HomePage() {
       </div>
 
       {/* SERVICES */}
-      <div className="ot-section">
+      <div className="ot-section" id="services" ref={servicesRef}>
         <div className="ot-section-tag">What We Offer</div>
         <h2 className="ot-section-title">OUR SERVICES</h2>
         <p className="ot-section-body">
@@ -701,7 +830,7 @@ export default function HomePage() {
       </div>
 
       {/* HOW IT WORKS */}
-      <div className="ot-how">
+      <div className="ot-how" id="how-it-works" ref={howRef}>
         <div className="ot-how-inner">
           <div className="ot-section-tag">The Process</div>
           <h2 className="ot-section-title">HOW IT WORKS</h2>
@@ -712,8 +841,10 @@ export default function HomePage() {
             {STEPS.map((step, i) => (
               <div key={i} className="ot-step" ref={el => stepRefs.current[i] = el} style={{ transitionDelay: `${i * 0.12}s` }}>
                 <div className="ot-step-num">{step.n}</div>
-                <div className="ot-step-title">{step.title}</div>
-                <p className="ot-step-desc">{step.desc}</p>
+                <div className="ot-step-text">
+                  <div className="ot-step-title">{step.title}</div>
+                  <p className="ot-step-desc">{step.desc}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -749,7 +880,7 @@ export default function HomePage() {
               </div>
             ) : (
               /* Thumbnail with play button — avoids auto-loading iframe */
-              <div className="ot-video-thumb" onClick={() => setVideoPlaying(true)}>
+              <div className="ot-video-thumb" aria-label="Play featured video" {...press(() => setVideoPlaying(true))}>
                 {getYTThumb(video.url)
                   ? <img src={getYTThumb(video.url)} alt="Video thumbnail" />
                   : <div style={{ width:'100%', height:'100%', background:'#0a0a14' }} />}
@@ -762,7 +893,7 @@ export default function HomePage() {
       )}
 
       {/* ── PORTFOLIO ── */}
-      <div className="ot-portfolio-wrap" ref={portfolioRef}>
+      <div className="ot-portfolio-wrap" id="portfolio" ref={portfolioRef}>
         <div className="ot-section-tag">Our Work</div>
         <h2 className="ot-section-title">PORTFOLIO</h2>
         <p className="ot-section-body">
@@ -770,14 +901,14 @@ export default function HomePage() {
         </p>
 
         {allProjects.length === 0 && (
-          <div style={{ marginTop: 52, textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 14, padding: '60px 0' }}>
-            Portfolio coming soon.
+          <div style={{ marginTop: 52, textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 14, padding: '60px 0' }} aria-live="polite">
+            {content === null ? 'Loading portfolio…' : 'Portfolio coming soon.'}
           </div>
         )}
 
         {/* ── Hero (first / featured) project ── */}
         {heroProject && (
-          <div className="ot-proj-hero" onClick={() => openProject(heroProject)}>
+          <div className="ot-proj-hero" aria-label={`View ${heroProject.title} gallery`} {...press(() => openProject(heroProject))}>
             {getCover(heroProject)
               ? <img className="ot-proj-hero-img" src={getCover(heroProject)} alt={heroProject.title} />
               : <div className="ot-hero-no-img" />}
@@ -793,9 +924,9 @@ export default function HomePage() {
               {heroProject.description && (
                 <p className="ot-proj-hero-desc">{heroProject.description}</p>
               )}
-              <button className="ot-view-btn">
+              <span className="ot-view-btn">
                 View Gallery <IconArrow />
-              </button>
+              </span>
             </div>
           </div>
         )}
@@ -804,7 +935,7 @@ export default function HomePage() {
         {gridProjects.length > 0 && (
           <div className="ot-proj-grid" style={{ marginTop: heroProject ? 20 : 52 }}>
             {gridProjects.map(proj => (
-              <div key={proj._id} className="ot-proj-card" onClick={() => openProject(proj)}>
+              <div key={proj._id} className="ot-proj-card" aria-label={`View ${proj.title} gallery`} {...press(() => openProject(proj))}>
                 <div className="ot-proj-card-img">
                   {getCover(proj)
                     ? <>
@@ -835,9 +966,10 @@ export default function HomePage() {
 
       {/* ── PROJECT MODAL ── */}
       {activeProj && (
-        <div className="ot-modal-backdrop" onClick={() => setActiveProj(null)}>
+        <div className="ot-modal-backdrop" role="dialog" aria-modal="true" aria-label={activeProj.title}>
+          <button className="ot-modal-close" aria-label="Close" autoFocus onClick={() => setActiveProj(null)}><IconClose /></button>
+          <div className="ot-modal-scroll" onClick={() => setActiveProj(null)}>
           <div className="ot-modal" onClick={e => e.stopPropagation()}>
-            <button className="ot-modal-close" onClick={() => setActiveProj(null)}><IconClose /></button>
 
             {/* Hero image */}
             {getCover(activeProj) && (
@@ -865,8 +997,8 @@ export default function HomePage() {
                   <div className="ot-modal-gallery-label">Gallery · {activeProj.images.length} photo{activeProj.images.length !== 1 ? 's' : ''}</div>
                   <div className="ot-modal-gallery">
                     {activeProj.images.map((img, i) => (
-                      <div key={i} className="ot-modal-gallery-item"
-                        onClick={() => openLightbox(activeProj.images.map(im => im.url), i)}>
+                      <div key={i} className="ot-modal-gallery-item" aria-label={`Open photo ${i + 1}`}
+                        {...press(() => openLightbox(activeProj.images.map(im => im.url), i))}>
                         <img src={img.url} alt={img.caption || `Photo ${i + 1}`} loading="lazy" />
                         <div className="ot-modal-gallery-item-overlay">
                           <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" viewBox="0 0 24 24">
@@ -880,22 +1012,28 @@ export default function HomePage() {
               )}
 
               {(!activeProj.images || activeProj.images.length === 0) && (
-                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13, textAlign:'center', padding:'24px 0' }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, textAlign:'center', padding:'24px 0' }}>
                   No gallery images for this project.
                 </p>
               )}
             </div>
+          </div>
           </div>
         </div>
       )}
 
       {/* LIGHTBOX */}
       {lightbox.open && (
-        <div className="ot-lightbox" onClick={closeLightbox}>
-          <button className="ot-lightbox-close" onClick={closeLightbox}>✕</button>
-          <button className="ot-lightbox-nav ot-lightbox-prev" onClick={e => { e.stopPropagation(); lbPrev(); }}>‹</button>
-          <img className="ot-lightbox-img" src={lightbox.images[lightbox.idx]} alt="Gallery" onClick={e => e.stopPropagation()} />
-          <button className="ot-lightbox-nav ot-lightbox-next" onClick={e => { e.stopPropagation(); lbNext(); }}>›</button>
+        <div className="ot-lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer"
+          onClick={closeLightbox} onTouchStart={onLbTouchStart} onTouchEnd={onLbTouchEnd}>
+          <button className="ot-lightbox-close" aria-label="Close photo" onClick={closeLightbox}>✕</button>
+          {lightbox.images.length > 1 && (
+            <button className="ot-lightbox-nav ot-lightbox-prev" aria-label="Previous photo" onClick={e => { e.stopPropagation(); lbPrev(); }}>‹</button>
+          )}
+          <img className="ot-lightbox-img" src={lightbox.images[lightbox.idx]} alt={`Photo ${lightbox.idx + 1} of ${lightbox.images.length}`} onClick={e => e.stopPropagation()} />
+          {lightbox.images.length > 1 && (
+            <button className="ot-lightbox-nav ot-lightbox-next" aria-label="Next photo" onClick={e => { e.stopPropagation(); lbNext(); }}>›</button>
+          )}
           <div className="ot-lightbox-counter">{lightbox.idx + 1} / {lightbox.images.length}</div>
         </div>
       )}
@@ -925,7 +1063,10 @@ export default function HomePage() {
       <footer className="ot-footer">
         <div className="ot-footer-logo">ONE<em>TAKE</em></div>
         <div className="ot-footer-copy">© 2026 Livetake Productions · Dasmariñas, Cavite</div>
-        <div className="ot-footer-contact">0906 8642 868 · livetakeproductions@gmail.com</div>
+        <div className="ot-footer-contact">
+          <a href="tel:+639068642868">09XXXXXXXX</a>
+          <a href="mailto:livetakeproductions@gmail.com">livetakeproductions@gmail.com</a>
+        </div>
       </footer>
     </div>
   );
