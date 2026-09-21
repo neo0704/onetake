@@ -16,4 +16,4 @@ const paymentQRSchema = new mongoose.Schema({
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
-module.exports = mongoose.model('PaymentQR', paymentQRSchema);
+module.exports = mongoose.model('Paymentqr', paymentQRSchema);

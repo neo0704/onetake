@@ -1,4 +1,4 @@
-const PaymentQR = require('../models/PaymentQR');
+const PaymentQR = require('../models/Paymentqr');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
