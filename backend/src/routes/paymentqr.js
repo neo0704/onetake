@@ -1,6 +1,6 @@
 const express = require('express');
 const router  = express.Router();
-const ctrl    = require('../controllers/paymentQRController');
+const ctrl    = require('../controllers/paymentqrController');
 const { protect, authorize } = require('../middleware/auth');
 
 // Clients can read active QR codes (to show during payment submission)
