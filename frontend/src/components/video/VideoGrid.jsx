@@ -45,10 +45,13 @@ export default function VideoGrid({ tiles, mainTileId, onSelectTile, onStopOwnSc
             <TileFace
               tile={tile}
               small={!!mainTile}
-              // Solo tile (no pin, only one participant): same reasoning as
-              // the main stage — let it keep its natural aspect ratio
-              // instead of cropping, since it fills the whole viewport.
-              fit={!mainTile && secondaryTiles.length === 1 ? 'contain' : 'cover'}
+              // The thumbnail strip (mainTile is set) is genuinely small —
+              // cropping to fill still looks fine there. But the main grid
+              // is the focal view for everyone in the call, regardless of
+              // how many people are in it, so it should never crop into
+              // someone's face just because their camera's aspect ratio
+              // doesn't match the cell's shape.
+              fit={mainTile ? 'cover' : 'contain'}
               onClick={() => onSelectTile(tile.id)}
               onStop={tile.isLocal && tile.kind === 'screen' ? onStopOwnScreen : undefined}
             />
