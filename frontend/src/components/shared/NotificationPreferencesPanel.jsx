@@ -1,26 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, Loader2 } from 'lucide-react';
-import useAuthStore from '../../store/authStore'; // adjust path if needed
+import api from '../../services/api'; // adjust path if needed
 
 export default function NotificationPreferencesPanel({ onClose }) {
-  const { token } = useAuthStore();
   const [enabled, setEnabled] = useState(null); // null = not loaded yet
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
 
   useEffect(() => {
-    fetch('/api/notification-preferences', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => {
+    api.get('/notification-preferences')
+      .then(res => {
+        const data = res.data;
         if (data.success) setEnabled(data.emailNotificationsEnabled);
         else setError(data.message || 'Failed to load preferences');
       })
       .catch(() => setError('Failed to load preferences'))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, []);
 
   const toggle = async () => {
     if (enabled === null || saving) return;
@@ -28,15 +25,10 @@ export default function NotificationPreferencesPanel({ onClose }) {
     setSaving(true);
     setError('');
     try {
-      const res = await fetch('/api/notification-preferences', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ emailNotificationsEnabled: next }),
+      const res = await api.patch('/notification-preferences', {
+        emailNotificationsEnabled: next,
       });
-      const data = await res.json();
+      const data = res.data;
       if (data.success) setEnabled(data.emailNotificationsEnabled);
       else setError(data.message || 'Failed to update preference');
     } catch {
