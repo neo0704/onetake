@@ -20,6 +20,7 @@ import { MicOff } from 'lucide-react';
  */
 export default function VideoPlayer({
   isLocal = false,
+  tileId,
   localVideoRef,
   localStream,
   stream,
@@ -44,6 +45,7 @@ export default function VideoPlayer({
     >
       {isLocal ? (
         <video
+          key={`local-${tileId}`}
           autoPlay
           muted
           playsInline
@@ -57,6 +59,7 @@ export default function VideoPlayer({
         stream &&
         !camOff && (
           <video
+            key={`remote-${tileId}`}
             autoPlay
             playsInline
             className={`w-full h-full ${fitClass}`}

@@ -11,7 +11,8 @@ import VideoGrid from '../components/video/VideoGrid';
 import ControlBar from '../components/common/ControlBar';
 import ChatPanel from '../components/chat/ChatPanel';
 
-const SERVER_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:5000';
+const SERVER_URL = 'http://localhost:5000';
+
 export default function VideoCall() {
   const { roomId } = useParams();
   const { user } = useAuthStore();
@@ -33,6 +34,7 @@ export default function VideoCall() {
     audio,
     screen,
     localScreenStream,
+    localStream,
     status,
     remoteStreams,
     initializeMedia,
@@ -112,7 +114,7 @@ export default function VideoCall() {
 
   const tiles = useMemo(() => {
     const list = [
-      { id: 'local', kind: 'camera', isLocal: true, localVideoRef, name: user?.name, camOff: !video, micOff: !audio },
+      { id: 'local', kind: 'camera', isLocal: true, localVideoRef, localStream, name: user?.name, camOff: !video, micOff: !audio },
     ];
     remoteEntries.forEach(([socketId, data]) => {
       list.push({ id: socketId, kind: 'camera', isLocal: false, name: data.name, stream: data.stream, camOff: data.camOff, micOff: data.micOff });
@@ -127,7 +129,7 @@ export default function VideoCall() {
     });
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remoteStreams, video, audio, screen, localScreenStream, user?.name]);
+  }, [remoteStreams, video, audio, screen, localScreenStream, localStream, user?.name]);
 
   // ── Decide what's pinned to the main stage ──────────────────────────
   let mainTileId = null;

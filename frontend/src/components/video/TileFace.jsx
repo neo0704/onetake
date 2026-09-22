@@ -20,7 +20,9 @@ export default function TileFace({ tile, small = false, active = false, onClick,
   return (
     <VideoPlayer
       isLocal={tile.isLocal}
+      tileId={tile.id}
       localVideoRef={tile.localVideoRef}
+      localStream={tile.localStream}
       stream={tile.stream}
       name={tile.name}
       camOff={tile.camOff}
