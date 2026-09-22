@@ -9,9 +9,19 @@ import { MicOff } from 'lucide-react';
  * tiles mount their own <video> only once a stream exists and camera is
  * on, attaching srcObject directly on mount.
  */
+/**
+ * Renders one participant's camera tile.
+ *
+ * Both local and remote <video> elements self-heal their srcObject on every
+ * mount — this matters because pinning/unpinning a tile moves it to a
+ * different container, which forces React to rebuild the <video> element
+ * from scratch. Without re-attaching the stream on that rebuild, the tile
+ * goes black even though the underlying camera/connection is fine.
+ */
 export default function VideoPlayer({
   isLocal = false,
   localVideoRef,
+  localStream,
   stream,
   name,
   camOff = false,
@@ -34,11 +44,14 @@ export default function VideoPlayer({
     >
       {isLocal ? (
         <video
-          ref={localVideoRef}
           autoPlay
           muted
           playsInline
           className={`w-full h-full ${fitClass} ${camOff ? 'hidden' : ''}`}
+          ref={(el) => {
+            if (localVideoRef) localVideoRef.current = el;
+            if (el && localStream && el.srcObject !== localStream) el.srcObject = localStream;
+          }}
         />
       ) : (
         stream &&

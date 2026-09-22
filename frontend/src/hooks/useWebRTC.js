@@ -24,6 +24,7 @@ export default function useWebRTC(webrtcService, socketService, localVideoRef) {
   const [audio, setAudio] = useState(true); // mic on/off
   const [screen, setScreen] = useState(false); // screen share on/off
   const [localScreenStream, setLocalScreenStream] = useState(null);
+  const [localStream, setLocalStream] = useState(null); // exposed for the UI to self-heal srcObject on remount
   const [status, setStatus] = useState('Connecting...');
   // { socketId: { name, stream (camera), screenStream, camOff, micOff } }
   const [remoteStreams, setRemoteStreams] = useState({});
@@ -32,6 +33,7 @@ export default function useWebRTC(webrtcService, socketService, localVideoRef) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStreamRef.current = stream;
+      setLocalStream(stream);
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
       return true;
     } catch (err) {
@@ -351,6 +353,7 @@ export default function useWebRTC(webrtcService, socketService, localVideoRef) {
     audio,
     screen,
     localScreenStream,
+    localStream,
     status,
     remoteStreams,
     initializeMedia,
