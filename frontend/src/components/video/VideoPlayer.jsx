@@ -20,7 +20,9 @@ export default function VideoPlayer({
   small = false,
   active = false,
   onClick,
+  fit = 'cover', // 'cover' for grid/thumbnail tiles, 'contain' for the large main-stage/solo view
 }) {
+  const fitClass = fit === 'contain' ? 'object-contain' : 'object-cover';
   const initial = name?.[0]?.toUpperCase();
   const showAvatar = isLocal ? camOff : !(stream && !camOff);
 
@@ -36,7 +38,7 @@ export default function VideoPlayer({
           autoPlay
           muted
           playsInline
-          className={`w-full h-full object-cover ${camOff ? 'hidden' : ''}`}
+          className={`w-full h-full ${fitClass} ${camOff ? 'hidden' : ''}`}
         />
       ) : (
         stream &&
@@ -44,7 +46,7 @@ export default function VideoPlayer({
           <video
             autoPlay
             playsInline
-            className="w-full h-full object-cover"
+            className={`w-full h-full ${fitClass}`}
             ref={(el) => {
               if (el && el.srcObject !== stream) el.srcObject = stream;
             }}

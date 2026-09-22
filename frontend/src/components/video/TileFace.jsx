@@ -3,7 +3,7 @@ import VideoPlayer from './VideoPlayer';
 import ScreenTile from './ScreenTile';
 
 /** Renders one tile as either a camera (VideoPlayer) or screen share (ScreenTile), based on tile.kind. */
-export default function TileFace({ tile, small = false, active = false, onClick, onStop }) {
+export default function TileFace({ tile, small = false, active = false, onClick, onStop, fit }) {
   if (tile.kind === 'screen') {
     return (
       <ScreenTile
@@ -29,6 +29,7 @@ export default function TileFace({ tile, small = false, active = false, onClick,
       active={active}
       onClick={onClick}
       small={small}
+      {...(fit ? { fit } : {})}
     />
   );
 }

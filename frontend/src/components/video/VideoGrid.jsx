@@ -21,19 +21,13 @@ export default function VideoGrid({ tiles, mainTileId, onSelectTile, onStopOwnSc
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {mainTile && (
-        <div className="flex-1 min-h-0 p-2 sm:p-3 pb-0 flex justify-center">
-          {/* A camera feed stretched across a very wide container gets
-              aggressively cropped by object-cover (you end up zoomed into
-              someone's face). Capping the width near the video's own
-              aspect ratio keeps the framing natural. Screen shares don't
-              have this problem — they want all the width they can get. */}
-          <div className={mainTile.kind === 'screen' ? 'w-full h-full' : 'h-full aspect-video max-w-full'}>
-            <TileFace
-              tile={mainTile}
-              active
-              onStop={mainTile.isLocal && mainTile.kind === 'screen' ? onStopOwnScreen : undefined}
-            />
-          </div>
+        <div className="flex-1 min-h-0 p-2 sm:p-3 pb-0">
+          <TileFace
+            tile={mainTile}
+            active
+            fit="contain"
+            onStop={mainTile.isLocal && mainTile.kind === 'screen' ? onStopOwnScreen : undefined}
+          />
         </div>
       )}
 
@@ -42,26 +36,19 @@ export default function VideoGrid({ tiles, mainTileId, onSelectTile, onStopOwnSc
           mainTile
             ? 'flex gap-2 h-20 sm:h-28 flex-shrink-0 p-2 sm:p-3 pt-2 overflow-x-auto'
             : secondaryTiles.length === 1
-            ? 'flex-1 flex justify-center p-2 sm:p-3 overflow-hidden'
+            ? 'flex-1 p-2 sm:p-3 overflow-hidden'
             : `flex-1 grid ${gridClass} gap-2 p-2 sm:p-3 overflow-hidden`
         }
       >
         {secondaryTiles.map((tile) => (
-          <div
-            key={tile.id}
-            className={
-              mainTile
-                ? 'w-28 sm:w-40 flex-shrink-0'
-                : // Solo tile: same aspect-ratio cap as the main stage, so
-                  // being alone in the call doesn't zoom into your face.
-                secondaryTiles.length === 1 && tile.kind !== 'screen'
-                ? 'h-full aspect-video max-w-full'
-                : ''
-            }
-          >
+          <div key={tile.id} className={mainTile ? 'w-28 sm:w-40 flex-shrink-0' : 'h-full'}>
             <TileFace
               tile={tile}
               small={!!mainTile}
+              // Solo tile (no pin, only one participant): same reasoning as
+              // the main stage — let it keep its natural aspect ratio
+              // instead of cropping, since it fills the whole viewport.
+              fit={!mainTile && secondaryTiles.length === 1 ? 'contain' : 'cover'}
               onClick={() => onSelectTile(tile.id)}
               onStop={tile.isLocal && tile.kind === 'screen' ? onStopOwnScreen : undefined}
             />
