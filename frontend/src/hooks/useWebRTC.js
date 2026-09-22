@@ -303,8 +303,21 @@ export default function useWebRTC(webrtcService, socketService, localVideoRef) {
       return null;
     }
 
+    // Split into two steps so we can tell "the OS picker itself failed / was
+    // cancelled" apart from "the picker worked, but wiring the track into the
+    // call afterward failed" — they were sharing one catch block before, so
+    // any renegotiation error looked identical to getDisplayMedia not being
+    // supported at all, which made this much harder to diagnose on phones.
+    let screenStream;
     try {
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+    } catch (err) {
+      if (err.name === 'NotAllowedError') return null; // user cancelled the picker — not an error
+      console.error('❌ getDisplayMedia failed:', err.name, err.message);
+      return 'screen-share-error';
+    }
+
+    try {
       screenStreamRef.current = screenStream;
       setScreen(true);
       setLocalScreenStream(screenStream);
@@ -331,7 +344,14 @@ export default function useWebRTC(webrtcService, socketService, localVideoRef) {
       };
       return null;
     } catch (err) {
-      return err.name !== 'NotAllowedError' ? 'screen-share-error' : null;
+      // The picker succeeded — screenStream is real — but attaching it to the
+      // call failed. Undo so the UI doesn't think we're sharing when we're not.
+      console.error('❌ Attaching screen share to the call failed:', err.name, err.message);
+      screenStream.getTracks().forEach((t) => t.stop());
+      screenStreamRef.current = null;
+      setScreen(false);
+      setLocalScreenStream(null);
+      return 'screen-share-error';
     }
   };
 
