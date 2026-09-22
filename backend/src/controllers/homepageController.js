@@ -1,4 +1,5 @@
 const HomepageContent = require('../models/HomepageContent');
+const Event            = require('../models/Event');
 
 /** Singleton helper — always returns the one homepage document, creating it if needed */
 const getDoc = async () => {
@@ -12,6 +13,33 @@ exports.getContent = async (req, res) => {
   try {
     const doc = await getDoc();
     res.json({ success: true, content: doc });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ── GET /homepage/reviews ── (public)
+// Client feedback the admin has chosen to feature — never every rating
+// automatically, since a client's comment isn't reviewed before it's written.
+exports.getReviews = async (req, res) => {
+  try {
+    const events = await Event.find({ 'feedback.featured': true, 'feedback.rating': { $exists: true } })
+      .populate('client', 'name')
+      .select('eventName eventCategory feedback client')
+      .sort({ 'feedback.submittedAt': -1 })
+      .limit(24);
+
+    const reviews = events.map(e => ({
+      id:            e._id,
+      clientName:    e.client?.name || 'Client',
+      eventName:     e.eventName,
+      eventCategory: e.eventCategory,
+      rating:        e.feedback.rating,
+      comment:       e.feedback.comment,
+      submittedAt:   e.feedback.submittedAt,
+    }));
+
+    res.json({ success: true, reviews });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

@@ -5,6 +5,7 @@ const { protect, authorize } = require('../middleware/auth');
 
 // Public
 router.get('/', ctrl.getContent);
+router.get('/reviews', ctrl.getReviews);
 
 // Admin only
 router.put('/video',                    protect, authorize('admin'), ctrl.updateVideo);

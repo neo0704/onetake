@@ -1184,6 +1184,23 @@ exports.submitFeedback = async (req, res) => {
   }
 };
 
+// ── Feature / unfeature feedback on the public homepage (admin) ──────────────
+exports.toggleFeedbackFeatured = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+    if (!event.feedback?.rating) {
+      return res.status(400).json({ success: false, message: 'This event has no feedback to feature yet.' });
+    }
+    event.feedback.featured = !event.feedback.featured;
+    await event.save();
+    res.json({ success: true, featured: event.feedback.featured });
+  } catch (err) {
+    console.error('[toggleFeedbackFeatured] Error:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // ── Schedule meeting ──────────────────────────────────────────────────────────
 exports.scheduleMeeting = async (req, res) => {
   try {

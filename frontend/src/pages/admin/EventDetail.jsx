@@ -66,7 +66,9 @@ const getTabs = (status) => {
 };
 
 // ── Feedback Banner — surfaced immediately once the client rates the event ────
-function FeedbackBanner({ feedback, clientName }) {
+// Feedback is private by default; the admin decides here whether it's safe
+// to show publicly on the homepage's "What Clients Say" section.
+function FeedbackBanner({ feedback, clientName, onToggleFeatured, togglingFeatured }) {
   return (
     <div className="p-4 bg-gradient-to-r from-yellow-500/10 via-primary/5 to-transparent border border-yellow-500/25 rounded-xl">
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -92,6 +94,23 @@ function FeedbackBanner({ feedback, clientName }) {
       ) : (
         <p className="text-white/30 text-xs italic mt-2">No written comment left.</p>
       )}
+      <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-white/10">
+        <span className="text-white/40 text-xs">
+          {feedback.featured ? 'Visible on the public homepage' : 'Not shown on the homepage'}
+        </span>
+        <button
+          type="button"
+          onClick={onToggleFeatured}
+          disabled={togglingFeatured}
+          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
+            feedback.featured
+              ? 'bg-primary/15 border-primary/40 text-primary hover:bg-primary/25'
+              : 'bg-white/5 border-white/15 text-white/60 hover:bg-white/10'
+          }`}
+        >
+          {togglingFeatured ? 'Saving…' : feedback.featured ? '✓ Featured on Homepage' : 'Feature on Homepage'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -747,6 +766,7 @@ export default function AdminEventDetail() {
   const [cancelAction,       setCancelAction]       = useState(null);
   const [adminNote,          setAdminNote]          = useState('');
   const [cancelLoading,      setCancelLoading]      = useState(false);
+  const [togglingFeatured,   setTogglingFeatured]   = useState(false);
 
   const [confirm, setConfirm] = useState({
     open: false, title: '', message: '', type: 'warning',
@@ -817,6 +837,19 @@ export default function AdminEventDetail() {
       toast.success(`Status updated`);
       fetchEvent();
     } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
+  };
+
+  const toggleFeedbackFeatured = async () => {
+    setTogglingFeatured(true);
+    try {
+      const { data } = await api.patch(`/events/${id}/feedback/feature`);
+      toast.success(data.featured ? 'Now visible on the homepage' : 'Removed from the homepage');
+      fetchEvent();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update');
+    } finally {
+      setTogglingFeatured(false);
+    }
   };
 
   const saveAssessment = async (formData) => {
@@ -1317,7 +1350,12 @@ export default function AdminEventDetail() {
 
       {/* Client Feedback — surfaced right after the paid status, not buried below */}
       {event.status === 'completed_paid' && event.feedback?.rating && (
-        <FeedbackBanner feedback={event.feedback} clientName={event.client?.name} />
+        <FeedbackBanner
+          feedback={event.feedback}
+          clientName={event.client?.name}
+          onToggleFeatured={toggleFeedbackFeatured}
+          togglingFeatured={togglingFeatured}
+        />
       )}
 
       {/* Cancellation Request Banner */}

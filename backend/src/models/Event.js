@@ -203,6 +203,9 @@ const eventSchema = new mongoose.Schema({
     rating:      { type: Number, min: 1, max: 5 },
     comment:     { type: String, default: '' },
     submittedAt: { type: Date },
+    // Admin picks which feedback is safe to show publicly on the homepage —
+    // a client's rating is never shown there automatically.
+    featured:    { type: Boolean, default: false },
   },
 
 }, { timestamps: true });

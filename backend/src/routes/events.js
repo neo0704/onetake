@@ -56,5 +56,6 @@ router.put('/:id/process-cancellation', protect, authorize('admin'), ctrl.proces
 router.post('/:id/withdraw-cancellation', protect, authorize('client'), ctrl.withdrawCancellation);
 // ── Feedback ───────────────────────────────────────────────────────────────────
 router.post('/:id/feedback', protect, authorize('client'), ctrl.submitFeedback);
+router.patch('/:id/feedback/feature', protect, authorize('admin'), ctrl.toggleFeedbackFeatured);
 
 module.exports = router;

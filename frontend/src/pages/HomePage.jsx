@@ -331,6 +331,36 @@ const css = `
     margin: 0 auto;
   }
 
+  /* ── REVIEWS ── */
+  .ot-reviews-wrap {
+    padding: 100px 48px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .ot-review-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 52px;
+  }
+  .ot-review-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .ot-review-card:hover { border-color: rgba(233,69,96,0.25); transform: translateY(-4px); }
+  .ot-review-stars { display: flex; gap: 3px; }
+  .ot-review-star { width: 16px; height: 16px; }
+  .ot-review-comment { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.75); flex: 1; }
+  .ot-review-author { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .ot-review-name { font-weight: 600; font-size: 14px; color: #fff; }
+  .ot-review-meta { font-size: 11px; color: rgba(255,255,255,0.4); }
+
   /* Featured project: big editorial hero card */
   .ot-proj-hero {
     position: relative;
@@ -543,7 +573,7 @@ const css = `
   .ot-drawer button:last-child { border-bottom:none; }
 
   /* Anchored sections stop below the fixed nav */
-  .ot-section, .ot-how, .ot-portfolio-wrap { scroll-margin-top:68px; }
+  .ot-section, .ot-how, .ot-portfolio-wrap, .ot-reviews-wrap { scroll-margin-top:68px; }
 
   /* Keyboard focus + touch */
   .ot-root button:focus-visible,
@@ -642,12 +672,22 @@ export default function HomePage() {
   const servicesRef  = useRef(null);
   const howRef       = useRef(null);
   const touchX       = useRef(null);
+  const reviewsRef   = useRef(null);
 
   // Fetch dynamic content
   useEffect(() => {
     api.get('/homepage')
       .then(r => setContent(r.data.content))
       .catch(() => setContent({ portfolio: [], featuredVideo: { isActive: false } }));
+  }, []);
+
+  // Reviews the admin has chosen to feature — a separate, lightweight fetch
+  // so a slow/failed reviews call never blocks the rest of the homepage.
+  const [reviews, setReviews] = useState(null); // null = loading, [] = loaded-but-empty
+  useEffect(() => {
+    api.get('/homepage/reviews')
+      .then(r => setReviews(r.data.reviews || []))
+      .catch(() => setReviews([]));
   }, []);
 
   useEffect(() => {
@@ -963,6 +1003,37 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* ── REVIEWS ── */}
+      {reviews && reviews.length > 0 && (
+        <div className="ot-reviews-wrap" id="reviews" ref={reviewsRef}>
+          <div className="ot-section-tag">Client Feedback</div>
+          <h2 className="ot-section-title">WHAT CLIENTS SAY</h2>
+          <p className="ot-section-body">
+            Real feedback from clients whose events we've had the privilege of covering.
+          </p>
+
+          <div className="ot-review-grid">
+            {reviews.map(r => (
+              <div key={r.id} className="ot-review-card">
+                <div className="ot-review-stars" aria-label={`${r.rating} out of 5 stars`}>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <svg key={n} viewBox="0 0 24 24" className="ot-review-star"
+                      fill={n <= r.rating ? '#facc15' : 'none'} stroke={n <= r.rating ? '#facc15' : 'rgba(255,255,255,0.2)'} strokeWidth="1.5">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  ))}
+                </div>
+                {r.comment && <p className="ot-review-comment">"{r.comment}"</p>}
+                <div className="ot-review-author">
+                  <span className="ot-review-name">{r.clientName}</span>
+                  <span className="ot-review-meta">{r.eventCategory || r.eventName}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── PROJECT MODAL ── */}
       {activeProj && (
