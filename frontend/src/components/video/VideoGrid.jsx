@@ -37,7 +37,7 @@ export default function VideoGrid({ tiles, mainTileId, onSelectTile, onStopOwnSc
             ? 'flex gap-2 h-20 sm:h-28 flex-shrink-0 p-2 sm:p-3 pt-2 overflow-x-auto'
             : secondaryTiles.length === 1
             ? 'flex-1 p-2 sm:p-3 overflow-hidden'
-            : `flex-1 grid ${gridClass} gap-2 p-2 sm:p-3 overflow-hidden`
+            : `flex-1 grid ${gridClass} auto-rows-fr gap-2 p-2 sm:p-3 overflow-hidden`
         }
       >
         {secondaryTiles.map((tile) => (
