@@ -11,8 +11,7 @@ import VideoGrid from '../components/video/VideoGrid';
 import ControlBar from '../components/common/ControlBar';
 import ChatPanel from '../components/chat/ChatPanel';
 
-const SERVER_URL = 'http://localhost:5000';
-
+const SERVER_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:5000';
 export default function VideoCall() {
   const { roomId } = useParams();
   const { user } = useAuthStore();
