@@ -1,7 +1,30 @@
+// STUN alone only works when both peers can find a direct path to each
+// other — reliable on the same WiFi (which is all we tested locally), but
+// frequently fails on real-world networks (mobile data, corporate/campus
+// firewalls, symmetric NATs). TURN relays media through a third party as a
+// fallback, which is what actually gets you connected in those cases.
+// Using OpenRelay's free public TURN server for now — fine for testing,
+// but rate-limited/shared, so swap in a paid provider (Twilio, Xirsys,
+// Metered.ca) or self-hosted coturn before relying on this in production.
 const ICE_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    {
+      urls: 'turn:global.relay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:global.relay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:global.relay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
   ],
 };
 
