@@ -52,7 +52,10 @@ export default function VideoPlayer({
           className={`w-full h-full ${fitClass} ${camOff ? 'hidden' : ''}`}
           ref={(el) => {
             if (localVideoRef) localVideoRef.current = el;
-            if (el && localStream && el.srcObject !== localStream) el.srcObject = localStream;
+            if (el && localStream && el.srcObject !== localStream) {
+              el.srcObject = localStream;
+              el.play().catch(() => {}); // muted local video — autoplay is never blocked, but stay defensive
+            }
           }}
         />
       ) : (
@@ -63,8 +66,18 @@ export default function VideoPlayer({
             autoPlay
             playsInline
             className={`w-full h-full ${fitClass}`}
+            // Rebuilding this element (new key, e.g. after pinning) means it has to
+            // autoplay again from scratch. Unmuted autoplay can be silently blocked
+            // by the browser outside a direct tap, leaving the element attached but
+            // black — so ask it to play explicitly, and give the tile itself a click
+            // handler as a fallback: a tap anywhere on a stuck black tile counts as
+            // the user gesture the browser was withholding play for.
+            onClick={(e) => { e.currentTarget.play?.().catch(() => {}); onClick?.(e); }}
             ref={(el) => {
-              if (el && el.srcObject !== stream) el.srcObject = stream;
+              if (el && el.srcObject !== stream) {
+                el.srcObject = stream;
+                el.play().catch(() => {});
+              }
             }}
           />
         )
