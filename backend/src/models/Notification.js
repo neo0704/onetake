@@ -12,7 +12,7 @@ const notificationSchema = new mongoose.Schema({
       'freelancer_assigned', 'event_reminder', 'event_started',
       'event_completed', 'final_payment_due', 'deliverable_uploaded',
       'message_received', 'meeting_scheduled', 'meeting_requested', 'meeting_declined',
-      'quotation_comment', 'general'
+      'quotation_comment', 'equipment_approved', 'equipment_rejected', 'general'
     ],
     required: true
   },

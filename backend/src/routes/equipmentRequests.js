@@ -64,7 +64,7 @@ router.post('/', protect, authorize('freelancer'), async (req, res) => {
     try {
       await notifyAdmins({
         type: 'general',
-        title: '🔧 Equipment Request',
+        title: 'Equipment Request',
         message: `${req.user.name} requested "${itemName}" ×${quantity || 1} for "${event.eventName}"`,
         data: { requestId: request._id, eventId },
         link: '/admin/equipment-requests'
@@ -204,7 +204,7 @@ router.put('/:id/review', protect, authorize('admin'), async (req, res) => {
           await sendNotification({
         recipient: request.freelancer._id,
         type: status === 'approved' ? 'equipment_approved' : 'general',
-        title: status === 'approved' ? '✅ Equipment Request Approved' : '❌ Equipment Request Rejected',
+        title: status === 'approved' ? 'Equipment Request Approved' : 'Equipment Request Rejected',
         message: status === 'approved'
           ? `Your request for "${request.itemName}" ×${request.quantity} has been approved and assigned to your project profile!${adminNote ? ` Note: ${adminNote}` : ''}`
           : `Your request for "${request.itemName}" was not approved.${adminNote ? ` Reason: ${adminNote}` : ''}`,
