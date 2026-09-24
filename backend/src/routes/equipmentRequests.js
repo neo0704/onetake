@@ -123,6 +123,7 @@ router.put('/:id/review', protect, authorize('admin'), async (req, res) => {
 
     // NEW: On approval, assign to event
     if (status === 'approved') {
+      try {
       const Event = require('../models/Event');
       const Equipment = require('../models/Equipment');
       const mongoose = require('mongoose');
@@ -191,6 +192,11 @@ router.put('/:id/review', protect, authorize('admin'), async (req, res) => {
           event.markModified('assignedEquipment');
           await event.save();
         }
+      }
+      } catch (assignErr) {
+        // Never let an auto-assign failure block the freelancer's notification —
+        // the request is already marked approved in the DB at this point regardless.
+        console.error('Equipment auto-assign failed (non-fatal):', assignErr.message);
       }
     }
 
