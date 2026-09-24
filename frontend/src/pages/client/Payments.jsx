@@ -173,6 +173,10 @@ export default function ClientPayments() {
 
   const handleSubmitClick = (e) => {
     e.preventDefault();
+    if (form.method !== 'cash' && !proofFile) {
+      toast.error('Please attach proof of payment (screenshot or receipt).');
+      return;
+    }
     setShowConfirm(true);
   };
 
@@ -441,7 +445,7 @@ export default function ClientPayments() {
           {/* Proof upload */}
           {form.method !== 'cash' && (
             <div>
-              <label className="label">Proof of Payment (screenshot)</label>
+              <label className="label">Proof of Payment (screenshot) *</label>
               <label className={`flex items-center gap-3 p-4 border-2 border-dashed rounded-xl cursor-pointer transition-colors
                 ${proofFile ? 'border-primary/50 bg-primary/5' : 'border-white/20 hover:border-white/40'}`}>
                 {proofFile ? (
@@ -463,11 +467,11 @@ export default function ClientPayments() {
                     <Upload className="w-5 h-5 text-white/30 flex-shrink-0" />
                     <div>
                       <p className="text-white/60 text-sm">Click to upload screenshot</p>
-                      <p className="text-white/30 text-xs">PNG, JPG — max 10MB</p>
+                      <p className="text-white/30 text-xs">Required — PNG, JPG — max 10MB</p>
                     </div>
                   </>
                 )}
-                <input type="file" className="hidden" accept="image/*,.pdf"
+                <input type="file" className="hidden" accept="image/*,.pdf" required={form.method !== 'cash'}
                   onChange={e => setProofFile(e.target.files[0])} />
               </label>
             </div>
