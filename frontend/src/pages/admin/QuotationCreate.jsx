@@ -517,13 +517,6 @@ export default function AdminQuotationCreate() {
           </div>
         </div>
 
-        {/* Payment reference */}
-        <div className="card bg-white/5 border border-white/10">
-          <h3 className="text-white/60 text-sm font-semibold mb-2">Payment Reference (shown to client)</h3>
-          <p className="text-white/50 text-sm">Cheque payable to: <span className="text-white">LIVETAKE PRODUCTIONS PHOTO AND VIDEO SERVICES</span></p>
-          
-        </div>
-
         {/* Actions */}
         <div className="flex gap-3 pb-8">
           <button type="button" onClick={() => handleSubmit('draft')} disabled={saving} className="btn-secondary">Save Draft</button>
