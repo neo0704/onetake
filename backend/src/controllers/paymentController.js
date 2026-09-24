@@ -3,27 +3,52 @@ const Event = require('../models/Event');
 const Quotation = require('../models/Quotation');
 const { sendNotification, notifyAdmins } = require('../services/notificationService');
 const { getIO } = require('../socket');
-const path = require('path');
-const fs = require('fs');
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../../uploads/payments');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `payment_${Date.now()}${path.extname(file.originalname)}`);
-  }
+// ── Cloudinary (permanent image storage) ───────────────────────────────────
+// Uses the same CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
+// env vars already configured for uploadRoute.js.
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-exports.upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Keep the file in memory, then send it straight to Cloudinary.
+// Nothing is written to the server's disk (Render wipes it on every restart).
+const storage = multer.memoryStorage();
+exports.upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/^image\//.test(file.mimetype)) return cb(null, true);
+    cb(new Error('Only image files are allowed'));
+  },
+});
+
+const uploadToCloudinary = (buffer, folder) =>
+  new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: `onetake/${folder}`, resource_type: 'image' },
+      (err, result) => (err ? reject(err) : resolve(result))
+    );
+    stream.end(buffer);
+  });
 
 exports.submitPayment = async (req, res) => {
   try {
     const { eventId, quotationId, type, amount, method, referenceNumber, notes } = req.body;
-    
-    const proofUrl = req.file ? `/uploads/payments/${req.file.filename}` : req.body.proofUrl;
+
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      return res.status(500).json({ success: false, message: 'Image storage is not configured on the server' });
+    }
+
+    let proofUrl = req.body.proofUrl;
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer, 'payments');
+      proofUrl = result.secure_url;
+    }
 
     const payment = await Payment.create({
       event: eventId,

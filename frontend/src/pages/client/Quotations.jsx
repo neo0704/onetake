@@ -16,12 +16,10 @@ const getBackendUrl = (filePath) => {
 
 // ── Livetake company info ──────────────────────────────────────────────────────
 const COMPANY = {
-  name:    'Livetake Productions Photo and Video Services',
   phone:   '0906 8642 868 | 0939 1423 567',
   bir:     'BIR Reg. 1RC0001344118 | DTI Reg. No. 1170472',
   address: 'Block E11 Lot 10, San Lorenzo 1, City of Dasmariñas, Cavite',
   email:   'livetakeproductions@gmail.com',
-  bank:    'Unionbank – Livetake Productions Photo and Video Services – Account No. 002710007685',
 };
 
 function QuotationCard({ q }) {
@@ -287,13 +285,6 @@ function QuotationCard({ q }) {
                       <span className="text-white/70 font-medium whitespace-nowrap">{formatCurrency(q.paymentTerms?.balanceAmount)}</span>
                     </div>
                   </div>
-                </div>
-
-                {/* Payment details */}
-                <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10 text-xs">
-                  <p className="text-white/50 font-semibold mb-2">Payment Details</p>
-                  <p className="text-white/60">Cheque payable to: <span className="text-white">{COMPANY.name}</span></p>
-                  <p className="text-white/60 mt-1">Bank Transfer: <span className="text-white">{COMPANY.bank}</span></p>
                 </div>
               </div>
 
