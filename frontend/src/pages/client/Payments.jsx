@@ -7,6 +7,11 @@ import toast from 'react-hot-toast';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 const getBackendUrl = (filePath) => {
+  if (!filePath) return '';
+  // Already an absolute URL (e.g. Cloudinary's secure_url) — use as-is.
+  // Only old-style relative paths like "/uploads/qr/gcash.png" need the
+  // backend origin prepended.
+  if (/^https?:\/\//i.test(filePath)) return filePath;
   const apiUrl = import.meta.env.VITE_API_URL || '';
   const origin = apiUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
   return `${origin}${filePath}`;
