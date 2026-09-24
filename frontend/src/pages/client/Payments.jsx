@@ -48,7 +48,9 @@ const METHODS = [
     color: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
     active: 'bg-blue-500/20 border-blue-500 text-blue-300',
     refLabel: 'GCash Reference Number',
-    refPlaceholder: 'e.g. 1234567890',
+    refPlaceholder: 'e.g. 1234567890123',
+    refPattern: /^\d{10,15}$/,
+    refError: 'GCash reference number should be 10–15 digits, numbers only.',
   },
   {
     value: 'maya',
@@ -57,7 +59,9 @@ const METHODS = [
     color: 'bg-green-500/10 border-green-500/30 text-green-400',
     active: 'bg-green-500/20 border-green-500 text-green-300',
     refLabel: 'Maya Reference Number',
-    refPlaceholder: 'e.g. 9876543210',
+    refPlaceholder: 'e.g. 9876543210123',
+    refPattern: /^\d{10,15}$/,
+    refError: 'Maya reference number should be 10–15 digits, numbers only.',
   },
   {
     value: 'bank_transfer',
@@ -67,6 +71,8 @@ const METHODS = [
     active: 'bg-purple-500/20 border-purple-500 text-purple-300',
     refLabel: 'Bank Transaction / Reference Number',
     refPlaceholder: 'e.g. TRN-20240101-123456',
+    refPattern: /^[A-Za-z0-9-]{6,30}$/,
+    refError: 'Bank reference number should be 6–30 letters/numbers (dashes allowed).',
   },
   {
     value: 'cash',
@@ -76,6 +82,8 @@ const METHODS = [
     active: 'bg-yellow-500/20 border-yellow-500 text-yellow-300',
     refLabel: null,
     refPlaceholder: null,
+    refPattern: null,
+    refError: null,
   },
 ];
 
@@ -173,6 +181,12 @@ export default function ClientPayments() {
 
   const handleSubmitClick = (e) => {
     e.preventDefault();
+    const methodConfig = METHODS.find(m => m.value === form.method) || METHODS[0];
+
+    if (methodConfig.refPattern && !methodConfig.refPattern.test(form.referenceNumber.trim())) {
+      toast.error(methodConfig.refError);
+      return;
+    }
     if (form.method !== 'cash' && !proofFile) {
       toast.error('Please attach proof of payment (screenshot or receipt).');
       return;
@@ -471,7 +485,7 @@ export default function ClientPayments() {
                     </div>
                   </>
                 )}
-                <input type="file" className="hidden" accept="image/*,.pdf" required={form.method !== 'cash'}
+                <input type="file" className="hidden" accept="image/*,.pdf"
                   onChange={e => setProofFile(e.target.files[0])} />
               </label>
             </div>

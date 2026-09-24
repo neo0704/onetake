@@ -271,9 +271,9 @@ function QuotationCard({ q }) {
                       <span className="text-white font-mono">+{formatCurrency(q.tax)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-base font-black pt-2 border-t border-white/20">
+                  <div className="flex justify-between items-baseline gap-2 text-base font-black pt-2 border-t border-white/20">
                     <span className="text-white">TOTAL PACKAGE</span>
-                    <span className="text-primary">{formatCurrency(q.totalAmount)}</span>
+                    <span className="text-primary whitespace-nowrap">{formatCurrency(q.totalAmount)}</span>
                   </div>
                   <div className="mt-3 pt-3 border-t border-white/10 space-y-1.5">
                     <div className="flex justify-between gap-2 text-sm">
