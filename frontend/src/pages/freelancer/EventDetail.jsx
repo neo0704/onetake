@@ -1046,7 +1046,8 @@ export default function FreelancerEventDetail() {
                   {dbEquipment.map(eq => {
                     const avail       = eq.availability || 'available';
                     const isAvailable = avail === 'available';
-                    const qty         = eq.quantity || eq.availableQuantity || 1;
+                    // What's actually free to request, not the total the company owns.
+                    const availableQty = eq.availableQuantity ?? eq.quantity ?? 1;
 
                     const availBadge = {
                       available:   { cls: 'bg-green-500/20 text-green-400', label: 'Available' },
@@ -1061,7 +1062,9 @@ export default function FreelancerEventDetail() {
                         onClick={() => isAvailable && setReqForm(f => ({
                           ...f,
                           equipmentId: eq._id,
-                          quantity: qty   // ← auto-fill from DB quantity
+                          // Default to 1, not the full available stock — the
+                          // freelancer adjusts this to what they actually need.
+                          quantity: 1
                         }))}
                         className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-all
                           ${!isAvailable
@@ -1076,7 +1079,7 @@ export default function FreelancerEventDetail() {
                           <div className="flex items-center gap-2 mt-0.5">
                             <p className="text-white/40 text-xs capitalize">{eq.category}</p>
                             <span className="text-white/20 text-xs">·</span>
-                            <span className="text-white/40 text-xs">Qty: {qty}</span>
+                            <span className="text-white/40 text-xs">Available: {availableQty}</span>
                           </div>
                         </div>
                         {/* Availability badge */}
@@ -1091,15 +1094,28 @@ export default function FreelancerEventDetail() {
                   })}
                 </div>
               )}
-              {/* Show auto-filled quantity when item selected */}
-              {reqForm.equipmentId && (
-                <div className="mt-2 flex items-center gap-2 p-2 bg-primary/10 border border-primary/20 rounded-lg">
-                  <CheckCircle className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                  <p className="text-primary/80 text-xs">
-                    Quantity auto-set to <strong>{reqForm.quantity}</strong> based on available stock
-                  </p>
-                </div>
-              )}
+              {/* Editable quantity, capped at what's actually available */}
+              {reqForm.equipmentId && (() => {
+                const selected  = dbEquipment.find(eq => eq._id === reqForm.equipmentId);
+                const maxQty    = selected ? (selected.availableQuantity ?? selected.quantity ?? 1) : 1;
+                return (
+                  <div className="mt-2 flex items-center gap-3 p-2.5 bg-primary/10 border border-primary/20 rounded-lg">
+                    <label className="text-primary/80 text-xs font-medium flex-shrink-0">Quantity needed</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={maxQty}
+                      className="input w-20 py-1"
+                      value={reqForm.quantity}
+                      onChange={e => {
+                        const val = parseInt(e.target.value) || 1;
+                        setReqForm(f => ({ ...f, quantity: Math.min(Math.max(val, 1), maxQty) }));
+                      }}
+                    />
+                    <span className="text-primary/60 text-xs">of {maxQty} available</span>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
