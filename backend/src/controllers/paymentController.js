@@ -36,9 +36,35 @@ const uploadToCloudinary = (buffer, folder) =>
     stream.end(buffer);
   });
 
+// Reference number format rules per payment method — mirrors the validation
+// already enforced client-side in Payments.jsx, so the API rejects the same
+// malformed input even if someone bypasses the UI and hits this endpoint directly.
+const REF_RULES = {
+  gcash:         { pattern: /^\d{10,15}$/,             message: 'GCash reference number should be 10–15 digits, numbers only.' },
+  maya:          { pattern: /^\d{10,15}$/,             message: 'Maya reference number should be 10–15 digits, numbers only.' },
+  bank_transfer: { pattern: /^[A-Za-z0-9-]{6,30}$/,    message: 'Bank reference number should be 6–30 letters/numbers (dashes allowed).' },
+};
+
 exports.submitPayment = async (req, res) => {
   try {
     const { eventId, quotationId, type, amount, method, referenceNumber, notes } = req.body;
+
+    // Reference number format (skip for cash, which has no rule / no reference).
+    const rule = REF_RULES[method];
+    if (rule && !rule.pattern.test(String(referenceNumber || '').trim())) {
+      return res.status(400).json({ success: false, message: rule.message });
+    }
+
+    // Proof of payment is required for every method except cash.
+    if (method !== 'cash' && !req.file && !req.body.proofUrl) {
+      return res.status(400).json({ success: false, message: 'Proof of payment (screenshot or receipt) is required.' });
+    }
+
+    // Block a second submission while an earlier one for this event is still pending review.
+    const existingPending = await Payment.findOne({ event: eventId, client: req.user.id, status: 'pending' });
+    if (existingPending) {
+      return res.status(409).json({ success: false, message: 'You already have a payment awaiting review for this project.' });
+    }
 
     if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
       return res.status(500).json({ success: false, message: 'Image storage is not configured on the server' });

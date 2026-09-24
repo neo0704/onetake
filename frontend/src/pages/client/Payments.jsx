@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { CreditCard, Plus, X, Smartphone, Building2, Wallet, QrCode } from 'lucide-react';
+import { CreditCard, Plus, X, Smartphone, Building2, Wallet, QrCode, Clock } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
 import { formatDate, formatCurrency } from '../../utils/helpers';
@@ -125,6 +125,13 @@ export default function ClientPayments() {
     ? [{ value: 'balance',     label: 'Balance'         }]
     : [{ value: 'downpayment', label: '50% Downpayment' }];
 
+  // A payment for this event that's already submitted but not yet verified/rejected.
+  // While this exists, the client shouldn't be able to submit another one for the
+  // same project — it would create confusion over which payment is being reviewed.
+  const pendingPayment = form.eventId
+    ? payments.find(p => p.event?._id === form.eventId && p.status === 'pending')
+    : null;
+
   const fetchData = async () => {
     try {
       const [pRes, eRes] = await Promise.all([
@@ -181,6 +188,10 @@ export default function ClientPayments() {
 
   const handleSubmitClick = (e) => {
     e.preventDefault();
+    if (pendingPayment) {
+      toast.error('You already have a payment awaiting review for this project.');
+      return;
+    }
     const methodConfig = METHODS.find(m => m.value === form.method) || METHODS[0];
 
     if (methodConfig.refPattern && !methodConfig.refPattern.test(form.referenceNumber.trim())) {
@@ -368,6 +379,23 @@ export default function ClientPayments() {
             </select>
           </div>
 
+          {/* Pending payment already submitted for this project — block a duplicate submission */}
+          {pendingPayment && (
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-2.5">
+              <Clock className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-yellow-400 text-sm font-medium">Payment Already Submitted</p>
+                <p className="text-yellow-400/70 text-xs mt-1">
+                  Your {pendingPayment.type} payment of {formatCurrency(pendingPayment.amount)} submitted on{' '}
+                  {formatDate(pendingPayment.createdAt)} is still awaiting review. Please wait for it to be
+                  verified or rejected before submitting another payment for this project.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!pendingPayment && (
+            <>
           {/* Payment summary */}
           {paySummary?.quotation && (
             <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl text-sm space-y-1">
@@ -514,12 +542,18 @@ export default function ClientPayments() {
               Payment will be verified within 24 hours. Your booking is confirmed once the downpayment is verified.
             </p>
           </div>
+            </>
+          )}
 
           <div className="flex gap-3">
-            <button type="button" onClick={() => { setShowModal(false); setSelectedEvent(null); setPaySummary(null); setForm({ eventId:'', type:'downpayment', amount:'', method:'gcash', referenceNumber:'', notes:'' }); }} className="btn-secondary flex-1 justify-center">Cancel</button>
-            <button type="submit" disabled={submitting} className="btn-primary flex-1 justify-center">
-              {submitting ? 'Submitting...' : 'Submit Payment'}
+            <button type="button" onClick={() => { setShowModal(false); setSelectedEvent(null); setPaySummary(null); setForm({ eventId:'', type:'downpayment', amount:'', method:'gcash', referenceNumber:'', notes:'' }); }} className="btn-secondary flex-1 justify-center">
+              {pendingPayment ? 'Close' : 'Cancel'}
             </button>
+            {!pendingPayment && (
+              <button type="submit" disabled={submitting} className="btn-primary flex-1 justify-center">
+                {submitting ? 'Submitting...' : 'Submit Payment'}
+              </button>
+            )}
           </div>
         </form>
       </Modal>
