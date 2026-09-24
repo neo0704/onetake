@@ -1,22 +1,20 @@
-const PaymentQR = require('../models/Paymentqr');
-const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
+const PaymentQR  = require('../models/Paymentqr');
+const cloudinary = require('cloudinary').v2;
+const multer      = require('multer');
 
-// ── Multer setup ────────────────────────────────────────────────────────────
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../../uploads/qrcodes');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const method = req.body.method || 'unknown';
-    cb(null, `qr_${method}_${Date.now()}${path.extname(file.originalname)}`);
-  }
+// ── Cloudinary (same config as uploadRoute.js) ──────────────────────────────
+// Set these 3 variables on Render → Environment (and in your local .env):
+//   CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+// Keep the file in memory, then send it straight to Cloudinary.
+// Nothing is written to the server's disk (Render wipes it on every restart).
 exports.upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) {
@@ -25,6 +23,25 @@ exports.upload = multer({
     cb(null, true);
   }
 });
+
+const uploadToCloudinary = (buffer, method) =>
+  new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'onetake/qrcodes', public_id: `qr_${method}_${Date.now()}`, resource_type: 'image' },
+      (err, result) => (err ? reject(err) : resolve(result))
+    );
+    stream.end(buffer);
+  });
+
+// Pull the Cloudinary public_id back out of a stored secure_url so we can
+// delete it later. Only handles Cloudinary URLs — old local '/uploads/...'
+// paths (from before this migration) are skipped, not deleted, since
+// they no longer exist on disk anyway after a Render restart.
+const publicIdFromUrl = (url) => {
+  if (!url || !url.includes('res.cloudinary.com')) return null;
+  const m = url.match(/\/upload\/(?:v\d+\/)?(.+?)\.[a-z0-9]+$/i);
+  return m ? m[1] : null;
+};
 
 // ── GET /payment-qr  (public-ish — clients need this) ───────────────────────
 exports.getQRCodes = async (req, res) => {
@@ -49,6 +66,10 @@ exports.upsertQRCode = async (req, res) => {
   try {
     const { method, label, accountName, accountNumber, instructions, isActive } = req.body;
 
+    if (req.file && (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET)) {
+      return res.status(500).json({ success: false, message: 'Image storage is not configured on the server' });
+    }
+
     // Build update payload
     const update = {
       label,
@@ -59,14 +80,18 @@ exports.upsertQRCode = async (req, res) => {
       ...(isActive !== undefined && { isActive: isActive === 'true' || isActive === true })
     };
 
-    // If a new image was uploaded, set it and delete the old one
+    // If a new image was uploaded, send it to Cloudinary and delete the old one there
     if (req.file) {
       const existing = await PaymentQR.findOne({ method });
-      if (existing?.qrImageUrl) {
-        const oldPath = path.join(__dirname, '../../', existing.qrImageUrl);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      const oldPublicId = publicIdFromUrl(existing?.qrImageUrl);
+
+      const result = await uploadToCloudinary(req.file.buffer, method);
+      update.qrImageUrl = result.secure_url;
+
+      if (oldPublicId) {
+        try { await cloudinary.uploader.destroy(oldPublicId); }
+        catch (e) { console.warn('Cloudinary cleanup failed (non-fatal):', e.message); }
       }
-      update.qrImageUrl = `/uploads/qrcodes/${req.file.filename}`;
     }
 
     const qr = await PaymentQR.findOneAndUpdate(
@@ -87,9 +112,10 @@ exports.deleteQRCode = async (req, res) => {
     const qr = await PaymentQR.findOne({ method: req.params.method });
     if (!qr) return res.status(404).json({ success: false, message: 'QR config not found' });
 
-    if (qr.qrImageUrl) {
-      const imgPath = path.join(__dirname, '../../', qr.qrImageUrl);
-      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+    const publicId = publicIdFromUrl(qr.qrImageUrl);
+    if (publicId) {
+      try { await cloudinary.uploader.destroy(publicId); }
+      catch (e) { console.warn('Cloudinary cleanup failed (non-fatal):', e.message); }
     }
 
     await qr.deleteOne();
