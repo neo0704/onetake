@@ -640,6 +640,27 @@ export default function FreelancerEventDetail() {
   // Only show equipment if NOT completed
   const myEquipment = isCompleted ? [] : (myAssignment?.equipment || []);
 
+  // ── Remaining requestable qty for an inventory item ─────────────────────
+  // Stock already assigned to this project's team, plus pending requests that
+  // haven't been approved yet, must be blocked out of what can be requested.
+  const getRemainingQty = (eq) => {
+    const stock = eq.availableQuantity ?? eq.quantity ?? 1;
+    const eqId  = String(eq._id);
+
+    const assigned = (event.assignedFreelancers || []).reduce((sum, af) => (
+      sum + (af.equipment || []).reduce((s, item) => {
+        const itemId = String(item.equipment?._id || item.equipment || '');
+        return itemId === eqId ? s + (item.quantity || 1) : s;
+      }, 0)
+    ), 0);
+
+    const pending = requests
+      .filter(r => r.status === 'pending' && String(r.equipment?._id || r.equipment || '') === eqId)
+      .reduce((s, r) => s + (r.quantity || 1), 0);
+
+    return Math.max(stock - assigned - pending, 0);
+  };
+
   // Tabs — hide "my equipment" and "requests" for completed projects
   const TABS = isCompleted
     ? ['overview']
@@ -1045,9 +1066,10 @@ export default function FreelancerEventDetail() {
                 <div className="max-h-64 overflow-y-auto space-y-1.5 border border-white/10 rounded-xl p-2">
                   {dbEquipment.map(eq => {
                     const avail       = eq.availability || 'available';
-                    const isAvailable = avail === 'available';
-                    // What's actually free to request, not the total the company owns.
-                    const availableQty = eq.availableQuantity ?? eq.quantity ?? 1;
+                    // What's actually free to request: stock minus already-assigned
+                    // and pending-request quantities.
+                    const availableQty = getRemainingQty(eq);
+                    const isAvailable = avail === 'available' && availableQty > 0;
 
                     const availBadge = {
                       available:   { cls: 'bg-green-500/20 text-green-400', label: 'Available' },
@@ -1084,7 +1106,7 @@ export default function FreelancerEventDetail() {
                         </div>
                         {/* Availability badge */}
                         <span className={`badge text-xs flex-shrink-0 ${availBadge.cls}`}>
-                          {availBadge.label}
+                          {avail === 'available' && availableQty === 0 ? 'Fully assigned' : availBadge.label}
                         </span>
                         {reqForm.equipmentId === eq._id && isAvailable && (
                           <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
@@ -1097,7 +1119,7 @@ export default function FreelancerEventDetail() {
               {/* Editable quantity, capped at what's actually available */}
               {reqForm.equipmentId && (() => {
                 const selected  = dbEquipment.find(eq => eq._id === reqForm.equipmentId);
-                const maxQty    = selected ? (selected.availableQuantity ?? selected.quantity ?? 1) : 1;
+                const maxQty    = selected ? getRemainingQty(selected) : 1;
                 return (
                   <div className="mt-2 flex items-center gap-3 p-2.5 bg-primary/10 border border-primary/20 rounded-lg">
                     <label className="text-primary/80 text-xs font-medium flex-shrink-0">Quantity needed</label>
