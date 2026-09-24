@@ -168,13 +168,22 @@ const createInSystemMeeting = async () => {
   const time24 = TIME_MAP[form.confirmedTime] || '09:00';
   const scheduledAt = `${form.confirmedDate}T${time24}:00`;
 
+  // event.client is populated as a full user object on the admin's event
+  // fetch, but may come through as a bare ObjectId string in some places —
+  // handle both so the client always ends up in participantIds.
+  const clientId = event.client?._id || event.client || null;
+  if (!clientId) {
+    console.warn('createInSystemMeeting: event has no client on it — meeting will be created without the client as a participant.');
+  }
+
   try {
     const { data } = await api.post('/meetings', {
-      eventId:     event._id,
-      title:       `Needs Assessment — ${event.eventName}`,
+      eventId:        event._id,
+      title:          `Needs Assessment — ${event.eventName}`,
       scheduledAt,
-      duration:    60,
-      notes:       form.notes || 'Needs assessment meeting with client.',
+      duration:       60,
+      notes:          form.notes || 'Needs assessment meeting with client.',
+      participantIds: clientId ? [clientId] : [],
     });
 
     console.log('✅ Meeting created successfully:', data.meeting);
