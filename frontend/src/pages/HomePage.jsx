@@ -5,22 +5,18 @@ import api from '../services/api';
 // ── Static Data ───────────────────────────────────────────────────────────────
 const SERVICES = [
   {
-    icon: '🎥',
     name: 'Multi-Camera Live Event Coverage & Livestreaming',
     desc: 'Professional multi-camera setup with real-time streaming. Includes Technical Director, Sony broadcast camcorders, HD production switcher, and hybrid speaker integration.',
   },
   {
-    icon: '📸',
     name: 'Events Digital Documentation',
     desc: 'Full photo and video coverage with Same-Day Edit (SDE) video. Two photographers, two videographers, plus drone footage for complete event coverage.',
   },
   {
-    icon: '💍',
     name: 'Wedding, Debut & Birthday Photo/Video with Livestream',
     desc: 'Comprehensive photography and videography for weddings, debuts, and birthdays — with live streaming included as standard.',
   },
   {
-    icon: '🌐',
     name: 'Remote & Virtual Livestreaming',
     desc: 'Broadcast-quality streaming for hybrid events, virtual conferences, and online meetings — no matter where your audience is.',
   },
@@ -47,7 +43,7 @@ function getEmbedUrl(url) {
   const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (yt) return `https://www.youtube.com/embed/${yt[1]}?rel=0&modestbranding=1&color=white`;
   const vm = url.match(/vimeo\.com\/(\d+)/);
-  if (vm) return `https://player.vimeo.com/video/${vm[1]}?color=e94560&title=0&byline=0`;
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}?color=d13652&title=0&byline=0`;
   return url; // direct video URL
 }
 
@@ -96,559 +92,224 @@ function Counter({ target }) {
 }
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────────
-const IconArrow  = () => <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>;
+const IconChevL  = () => <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>;
+const IconChevR  = () => <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>;
 const IconSignIn = () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>;
 const IconPlay   = () => <svg width="28" height="28" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>;
 const IconClose  = () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>;
 const IconMenu   = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>;
-const IconGrid   = () => <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z"/></svg>;
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Serif+Display:ital@0;1&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap');
 
   .ot-root * { box-sizing: border-box; margin: 0; padding: 0; }
   .ot-root {
-    --red:    #e94560;
-    --red2:   #ff6b85;
-    --dark:   #0d0d1a;
-    --darker: #080810;
-    --card:   #12121f;
-    --border: rgba(255,255,255,0.08);
-    --muted:  rgba(255,255,255,0.62);
-    background: var(--darker);
-    color: #fff;
-    font-family: 'DM Sans', sans-serif;
-    overflow-x: hidden;
-  }
-  .ot-noise {
-    position: fixed; inset: 0; pointer-events: none; z-index: 999;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-    opacity: 0.35;
+    --accent:#d13652; --accent-hover:#b92c46; --accent-text:#f47a8e;
+    --bg:#0e0f12; --surface:#15171b; --line:rgba(255,255,255,0.1);
+    --muted:rgba(255,255,255,0.68); --faint:rgba(255,255,255,0.5);
+    --gutter:max(48px, calc((100% - 1104px) / 2));
+    background:var(--bg); color:#fff; font-family:'Schibsted Grotesk',system-ui,sans-serif;
+    overflow-x:hidden; -webkit-font-smoothing:antialiased;
   }
 
   /* NAV */
-  .ot-nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 48px; height: 68px;
-    background: rgba(8,8,16,0.88); backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border); transition: background 0.3s;
-  }
-  .ot-nav.scrolled { background: rgba(8,8,16,0.97); }
-  .ot-logo { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:6px; color:#fff; text-decoration:none; }
-  .ot-logo em { color:var(--red); font-style:normal; }
+  .ot-nav { position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-items:center; justify-content:space-between; padding:0 var(--gutter); height:68px; background:transparent; border-bottom:1px solid transparent; transition:background .25s, border-color .25s; }
+  .ot-nav.scrolled { background:rgba(14,15,18,0.94); border-bottom-color:var(--line); backdrop-filter:blur(12px); }
+  .ot-logo { font-weight:700; font-size:20px; letter-spacing:0.14em; color:#fff; text-decoration:none; }
+  .ot-logo em { color:var(--accent-text); font-style:normal; }
   .ot-nav-right { display:flex; align-items:center; gap:10px; }
-  .ot-btn-ghost {
-    padding:9px 20px; background:transparent; border:1px solid var(--border);
-    color:rgba(255,255,255,0.65); border-radius:8px; font-family:'DM Sans',sans-serif;
-    font-size:14px; font-weight:500; cursor:pointer; transition:all 0.2s;
-    display:inline-flex; align-items:center; gap:7px;
-  }
-  .ot-btn-ghost:hover { border-color:rgba(255,255,255,0.3); color:#fff; background:rgba(255,255,255,0.06); }
-  .ot-btn-red {
-    padding:9px 22px; background:var(--red); border:1px solid var(--red); color:#fff;
-    border-radius:8px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600;
-    cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; gap:7px;
-  }
-  .ot-btn-red:hover { background:#ff2d50; transform:translateY(-1px); box-shadow:0 8px 24px rgba(233,69,96,0.35); }
-
-  /* HERO */
-  .ot-hero {
-    min-height:100vh; min-height:100svh; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:140px 48px 100px; position:relative; overflow:hidden;
-  }
-  .ot-hero-glow {
-    position:absolute; top:-10%; left:50%; transform:translateX(-50%);
-    width:900px; height:700px; pointer-events:none;
-    background:radial-gradient(ellipse, rgba(233,69,96,0.11) 0%, transparent 65%);
-  }
-  .ot-hero-grid {
-    position:absolute; inset:0; pointer-events:none;
-    background-image: linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px);
-    background-size:64px 64px;
-    -webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 40%, black 30%, transparent 100%);
-    mask-image:radial-gradient(ellipse 80% 80% at 50% 40%, black 30%, transparent 100%);
-  }
-  .ot-eyebrow {
-    display:inline-flex; align-items:center; gap:8px; padding:6px 16px;
-    background:rgba(233,69,96,0.1); border:1px solid rgba(233,69,96,0.28); border-radius:100px;
-    font-size:11px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--red2);
-    margin-bottom:32px; position:relative; z-index:2; animation:fadeUp 0.8s ease both;
-  }
-  .ot-dot { width:6px; height:6px; background:var(--red); border-radius:50%; animation:blink 2s infinite; }
-  @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.35;transform:scale(0.65)} }
-  .ot-hero-title {
-    font-family:'Bebas Neue',sans-serif; font-size:clamp(80px,14vw,160px);
-    letter-spacing:8px; line-height:0.9; text-align:center; position:relative; z-index:2;
-    margin-bottom:8px; animation:fadeUp 0.8s ease 0.15s both;
-  }
-  .ot-hero-title .ghost { display:block; color:transparent; -webkit-text-stroke:1px rgba(255,255,255,0.18); }
-  .ot-hero-title .red { color:var(--red); }
-  .ot-hero-sub {
-    font-family:'DM Serif Display',serif; font-style:italic; font-size:clamp(15px,1.8vw,19px);
-    color:var(--muted); text-align:center; max-width:500px; line-height:1.7;
-    margin:28px 0 52px; position:relative; z-index:2; animation:fadeUp 0.8s ease 0.3s both;
-  }
-  .ot-hero-btns { display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:center; position:relative; z-index:2; animation:fadeUp 0.8s ease 0.45s both; }
-  .ot-cta-main {
-    padding:16px 40px; background:var(--red); border:none; color:#fff; border-radius:10px;
-    font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; cursor:pointer;
-    transition:all 0.25s; display:inline-flex; align-items:center; gap:10px;
-  }
-  .ot-cta-main:hover { background:#ff2d50; transform:translateY(-2px); box-shadow:0 16px 40px rgba(233,69,96,0.42); }
-  .ot-cta-main:hover .ot-arrow { transform:translateX(4px); }
-  .ot-arrow { transition:transform 0.2s; display:inline-flex; }
-  .ot-cta-out {
-    padding:16px 40px; background:transparent; border:1px solid rgba(255,255,255,0.14);
-    color:rgba(255,255,255,0.75); border-radius:10px; font-family:'DM Sans',sans-serif;
-    font-size:15px; font-weight:500; cursor:pointer; transition:all 0.25s;
-    display:inline-flex; align-items:center; gap:10px;
-  }
-  .ot-cta-out:hover { border-color:rgba(255,255,255,0.38); color:#fff; transform:translateY(-2px); background:rgba(255,255,255,0.04); }
-  .ot-scroll-hint {
-    position:absolute; bottom:36px; left:50%; transform:translateX(-50%);
-    display:flex; flex-direction:column; align-items:center; gap:8px;
-    color:rgba(255,255,255,0.35); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; z-index:2;
-    animation:fadeUp 1s ease 1s both;
-  }
-  .ot-scroll-line { width:1px; height:40px; background:linear-gradient(to bottom, rgba(255,255,255,0.28), transparent); animation:dropLine 2s ease-in-out infinite; }
-  @keyframes dropLine {
-    0%{transform:scaleY(0);transform-origin:top;opacity:0}
-    45%{transform:scaleY(1);transform-origin:top;opacity:1}
-    55%{transform:scaleY(1);transform-origin:bottom;opacity:1}
-    100%{transform:scaleY(0);transform-origin:bottom;opacity:0}
-  }
-
-  /* STATS */
-  .ot-stats { background:var(--card); border-top:1px solid var(--border); border-bottom:1px solid var(--border); display:grid; grid-template-columns:repeat(4,1fr); }
-  .ot-stat { display:flex; flex-direction:column; align-items:center; gap:4px; padding:28px 16px; border-right:1px solid var(--border); }
-  .ot-stat:last-child { border-right:none; }
-  .ot-stat-num { font-family:'Bebas Neue',sans-serif; font-size:42px; letter-spacing:2px; color:#fff; line-height:1; }
-  .ot-stat-num em { color:var(--red); font-style:normal; }
-  .ot-stat-label { font-size:10px; font-weight:600; letter-spacing:1.8px; text-transform:uppercase; color:var(--muted); }
-
-  /* SECTIONS */
-  .ot-section { padding:100px 48px; max-width:1200px; margin:0 auto; }
-  .ot-section-tag { display:inline-flex; align-items:center; gap:8px; font-size:10px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin-bottom:18px; }
-  .ot-section-tag::before { content:''; width:20px; height:1px; background:var(--red); }
-  .ot-section-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(44px,5vw,68px); letter-spacing:3px; line-height:1; margin-bottom:14px; }
-  .ot-section-body { font-size:15px; line-height:1.8; color:var(--muted); max-width:520px; }
-
-  /* SERVICES */
-  .ot-services-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:52px; }
-  .ot-svc {
-    background:var(--card); border:1px solid var(--border); border-radius:16px; padding:34px;
-    transition:all 0.3s; position:relative; overflow:hidden;
-    opacity:0; transform:translateY(28px);
-  }
-  .ot-svc.visible { opacity:1; transform:translateY(0); }
-  .ot-svc::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--red),transparent); opacity:0; transition:opacity 0.3s; }
-  .ot-svc:hover { border-color:rgba(233,69,96,0.22); transform:translateY(-5px) !important; box-shadow:0 20px 48px rgba(0,0,0,0.45); }
-  .ot-svc:hover::after { opacity:1; }
-  .ot-svc-icon { width:48px; height:48px; background:rgba(233,69,96,0.09); border:1px solid rgba(233,69,96,0.18); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:18px; }
-  .ot-svc-name { font-size:16px; font-weight:600; margin-bottom:10px; }
-  .ot-svc-desc { font-size:13px; line-height:1.75; color:var(--muted); }
-
-  /* HOW IT WORKS */
-  .ot-how { padding:100px 48px; background:var(--card); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
-  .ot-how-inner { max-width:1200px; margin:0 auto; }
-  .ot-steps { display:grid; grid-template-columns:repeat(5,1fr); gap:0; margin-top:56px; position:relative; }
-  .ot-steps::before { content:''; position:absolute; top:27px; left:10%; right:10%; height:1px; background:linear-gradient(90deg,transparent,var(--red),rgba(233,69,96,0.25),transparent); }
-  .ot-step { display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 10px; opacity:0; transform:translateY(20px); transition:opacity 0.5s ease, transform 0.5s ease; }
-  .ot-step.visible { opacity:1; transform:translateY(0); }
-  .ot-step-num { width:54px; height:54px; background:var(--darker); border:1px solid var(--red); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue',sans-serif; font-size:21px; letter-spacing:1px; color:var(--red); margin-bottom:18px; position:relative; z-index:1; transition:all 0.3s; }
-  .ot-step:hover .ot-step-num { background:var(--red); color:#fff; box-shadow:0 0 24px rgba(233,69,96,0.45); }
-  .ot-step-title { font-size:13px; font-weight:600; margin-bottom:8px; }
-  .ot-step-desc { font-size:12px; line-height:1.65; color:var(--muted); }
-
-  /* ── FEATURED VIDEO ── */
-  .ot-video-section {
-    position: relative;
-    background: var(--darker);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    padding: 100px 48px;
-    overflow: hidden;
-  }
-  .ot-video-glow {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-    width: 800px; height: 500px; pointer-events: none;
-    background: radial-gradient(ellipse, rgba(233,69,96,0.07) 0%, transparent 70%);
-  }
-  .ot-video-inner { max-width: 960px; margin: 0 auto; position: relative; z-index: 2; }
-  .ot-video-header { text-align: center; margin-bottom: 48px; }
-  .ot-video-header .ot-section-title { margin-bottom: 10px; }
-  .ot-video-header p { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 17px; color: var(--muted); }
-  .ot-video-frame {
-    position: relative;
-    border-radius: 20px;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    box-shadow: 0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(233,69,96,0.1);
-    background: #000;
-  }
-  .ot-video-frame::before {
-    content: '';
-    position: absolute; inset: 0; z-index: 1;
-    border-radius: 20px;
-    box-shadow: inset 0 0 80px rgba(233,69,96,0.06);
-    pointer-events: none;
-  }
-  .ot-video-frame iframe,
-  .ot-video-frame video {
-    display: block;
-    width: 100%;
-    aspect-ratio: 16/9;
-    border: none;
-  }
-  /* Thumbnail play button overlay */
-  .ot-video-thumb {
-    position: relative; cursor: pointer;
-    border-radius: 20px; overflow: hidden;
-    border: 1px solid var(--border);
-    box-shadow: 0 40px 100px rgba(0,0,0,0.6);
-    aspect-ratio: 16/9;
-    background: #0a0a14;
-  }
-  .ot-video-thumb img { width:100%; height:100%; object-fit:cover; transition:transform 0.5s ease; }
-  .ot-video-thumb:hover img { transform:scale(1.03); }
-  .ot-play-btn {
-    position: absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    width: 80px; height: 80px; border-radius: 50%;
-    background: rgba(233,69,96,0.9); border: 2px solid rgba(255,255,255,0.2);
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; transition: all 0.3s;
-    box-shadow: 0 8px 32px rgba(233,69,96,0.5);
-  }
-  .ot-video-thumb:hover .ot-play-btn { background: var(--red); transform: translate(-50%,-50%) scale(1.1); box-shadow: 0 16px 48px rgba(233,69,96,0.6); }
-  .ot-thumb-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.3); }
-
-  /* ── PORTFOLIO ── */
-  .ot-portfolio-wrap {
-    padding: 100px 48px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  /* ── REVIEWS ── */
-  .ot-reviews-wrap {
-    padding: 100px 48px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  .ot-review-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    margin-top: 52px;
-  }
-  .ot-review-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    transition: border-color 0.3s, transform 0.3s;
-  }
-  .ot-review-card:hover { border-color: rgba(233,69,96,0.25); transform: translateY(-4px); }
-  .ot-review-stars { display: flex; gap: 3px; }
-  .ot-review-star { width: 16px; height: 16px; }
-  .ot-review-comment { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.75); flex: 1; }
-  .ot-review-author { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
-  .ot-review-name { font-weight: 600; font-size: 14px; color: #fff; }
-  .ot-review-meta { font-size: 11px; color: rgba(255,255,255,0.4); }
-
-  /* Featured project: big editorial hero card */
-  .ot-proj-hero {
-    position: relative;
-    border-radius: 20px;
-    overflow: hidden;
-    margin-top: 52px;
-    cursor: pointer;
-    min-height: 500px;
-    display: flex;
-    align-items: flex-end;
-    border: 1px solid var(--border);
-  }
-  .ot-proj-hero-img {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-    transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
-  }
-  .ot-proj-hero:hover .ot-proj-hero-img { transform: scale(1.04); }
-  .ot-proj-hero-overlay {
-    position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.1) 100%);
-  }
-  .ot-proj-hero-content {
-    position: relative; z-index: 2;
-    padding: 44px 48px;
-    width: 100%;
-  }
-  .ot-proj-hero-tag {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 10px; font-weight: 700; letter-spacing: 3px;
-    text-transform: uppercase; color: var(--red2); margin-bottom: 12px;
-  }
-  .ot-proj-hero-tag::before { content:''; width:16px; height:1px; background:var(--red); }
-  .ot-proj-hero-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(38px, 5vw, 62px);
-    letter-spacing: 3px; line-height: 1;
-    margin-bottom: 16px;
-  }
-  .ot-proj-hero-tags { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
-  .ot-proj-hero-tag-pill {
-    padding: 4px 12px;
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 100px; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.7);
-  }
-  .ot-proj-hero-desc {
-    font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.6);
-    max-width: 580px; margin-bottom: 28px;
-  }
-  .ot-view-btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 11px 28px; background: var(--red); border: none; color: #fff;
-    border-radius: 8px; font-family: 'DM Sans', sans-serif;
-    font-size: 13px; font-weight: 600; cursor: pointer;
-    transition: all 0.2s;
-  }
-  .ot-view-btn:hover { background: #ff2d50; transform: translateX(4px); }
-  .ot-hero-no-img {
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, var(--card) 0%, rgba(233,69,96,0.08) 100%);
-  }
-
-  /* Grid of remaining projects */
-  .ot-proj-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-top: 20px;
-  }
-  .ot-proj-card {
-    border-radius: 16px; overflow: hidden;
-    border: 1px solid var(--border);
-    background: var(--card);
-    cursor: pointer;
-    transition: all 0.35s;
-    display: flex; flex-direction: column;
-  }
-  .ot-proj-card:hover { border-color: rgba(233,69,96,0.3); transform: translateY(-6px); box-shadow: 0 24px 56px rgba(0,0,0,0.5); }
-  .ot-proj-card-img {
-    position: relative;
-    aspect-ratio: 4/3;
-    overflow: hidden;
-    background: #0a0a14;
-  }
-  .ot-proj-card-img img { width:100%; height:100%; object-fit:cover; transition:transform 0.5s ease; display:block; }
-  .ot-proj-card:hover .ot-proj-card-img img { transform: scale(1.07); }
-  .ot-proj-card-img-overlay {
-    position: absolute; inset: 0;
-    background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 100%);
-    opacity: 0; transition: opacity 0.3s;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .ot-proj-card:hover .ot-proj-card-img-overlay { opacity: 1; }
-  .ot-proj-card-hover-icon {
-    width: 48px; height: 48px; background: rgba(233,69,96,0.9);
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    color: #fff; transform: scale(0.7); transition: transform 0.3s;
-  }
-  .ot-proj-card:hover .ot-proj-card-hover-icon { transform: scale(1); }
-  .ot-proj-card-no-img {
-    width:100%; height:100%;
-    background: linear-gradient(135deg, #12121f 0%, rgba(233,69,96,0.06) 100%);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 48px; aspect-ratio: 4/3;
-  }
-  .ot-proj-card-body { padding: 20px; flex: 1; }
-  .ot-proj-card-client { font-size:10px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; color:var(--red); margin-bottom:6px; }
-  .ot-proj-card-title { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:1.5px; line-height:1.1; margin-bottom:10px; }
-  .ot-proj-card-tags { display:flex; flex-wrap:wrap; gap:5px; }
-  .ot-proj-card-tag { padding:3px 10px; background:rgba(233,69,96,0.08); border:1px solid rgba(233,69,96,0.2); border-radius:100px; font-size:10px; font-weight:600; color:var(--red2); }
-
-  /* No-image card placeholder */
-  .ot-proj-empty-img { width:100%; aspect-ratio:4/3; background:linear-gradient(135deg,#12121f 0%,rgba(233,69,96,0.06) 100%); display:flex; align-items:center; justify-content:center; }
-  .ot-proj-empty-label { font-family:'Bebas Neue',sans-serif; font-size:36px; letter-spacing:3px; color:rgba(255,255,255,0.08); }
-
-  /* Project Modal */
-  .ot-modal-backdrop {
-    position: fixed; inset: 0; z-index: 1000;
-    background: rgba(0,0,0,0.88);
-    backdrop-filter: blur(10px);
-    animation: fadeIn 0.25s ease;
-  }
-  .ot-modal-scroll {
-    position: absolute; inset: 0; overflow-y: auto;
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 40px 20px;
-    overscroll-behavior: contain;
-  }
-  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-  .ot-modal {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    width: 100%; max-width: 880px;
-    overflow: hidden;
-    position: relative;
-    animation: slideUp 0.3s ease;
-  }
-  @keyframes slideUp { from{opacity:0;transform:translateY(32px)} to{opacity:1;transform:translateY(0)} }
-  .ot-modal-close {
-    position: absolute; top: 16px; right: 16px; z-index: 20;
-    width: 44px; height: 44px; background: rgba(0,0,0,0.75);
-    border: 1px solid rgba(255,255,255,0.1); border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; cursor: pointer; transition: all 0.2s;
-  }
-  .ot-modal-close:hover { background: var(--red); border-color: var(--red); }
-  .ot-modal-hero { position: relative; aspect-ratio: 16/7; overflow: hidden; background: #0a0a14; }
-  .ot-modal-hero img { width:100%; height:100%; object-fit:cover; display:block; }
-  .ot-modal-hero-overlay { position:absolute; inset:0; background:linear-gradient(to top, var(--card) 0%, transparent 40%); }
-  .ot-modal-body { padding: 36px 40px; }
-  .ot-modal-client { font-size:10px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin-bottom:8px; display:inline-flex; align-items:center; gap:8px; }
-  .ot-modal-client::before { content:''; width:16px; height:1px; background:var(--red); }
-  .ot-modal-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(32px,4vw,52px); letter-spacing:2px; line-height:1; margin-bottom:16px; }
-  .ot-modal-tags { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
-  .ot-modal-tag { padding:5px 14px; background:rgba(233,69,96,0.08); border:1px solid rgba(233,69,96,0.22); border-radius:100px; font-size:11px; font-weight:600; color:var(--red2); }
-  .ot-modal-desc { font-size:14px; line-height:1.8; color:var(--muted); margin-bottom:32px; }
-  .ot-modal-gallery-label { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:14px; }
-  .ot-modal-gallery { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-  .ot-modal-gallery-item { aspect-ratio:4/3; overflow:hidden; border-radius:10px; cursor:pointer; position:relative; background:#0a0a14; }
-  .ot-modal-gallery-item img { width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.4s ease; }
-  .ot-modal-gallery-item:hover img { transform:scale(1.08); }
-  .ot-modal-gallery-item-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.3); opacity:0; transition:opacity 0.2s; display:flex; align-items:center; justify-content:center; }
-  .ot-modal-gallery-item:hover .ot-modal-gallery-item-overlay { opacity:1; }
-
-  /* Lightbox */
-  .ot-lightbox { position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.95); display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); animation:fadeIn 0.2s ease; }
-  .ot-lightbox-img { max-width:90vw; max-height:88vh; border-radius:12px; object-fit:contain; box-shadow:0 32px 80px rgba(0,0,0,0.7); }
-  .ot-lightbox-close { position:absolute; top:24px; right:28px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); color:#fff; width:44px; height:44px; border-radius:50%; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s; }
-  .ot-lightbox-close:hover { background:rgba(233,69,96,0.4); }
-  .ot-lightbox-nav { position:absolute; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; width:50px; height:50px; border-radius:50%; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
-  .ot-lightbox-nav:hover { background:rgba(233,69,96,0.35); border-color:var(--red); }
-  .ot-lightbox-prev { left:24px; }
-  .ot-lightbox-next { right:24px; }
-  .ot-lightbox-counter { position:absolute; bottom:24px; left:50%; transform:translateX(-50%); font-size:12px; letter-spacing:2px; color:rgba(255,255,255,0.45); }
-
-  /* BIG CTA */
-  .ot-cta-section { padding:120px 48px; text-align:center; position:relative; overflow:hidden; }
-  .ot-cta-glow { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:700px; height:500px; pointer-events:none; background:radial-gradient(ellipse, rgba(233,69,96,0.07) 0%, transparent 70%); }
-  .ot-cta-inner { max-width:660px; margin:0 auto; position:relative; z-index:2; }
-  .ot-cta-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(48px,7vw,84px); letter-spacing:4px; line-height:1; margin-bottom:18px; }
-  .ot-cta-title em { color:var(--red); font-style:normal; display:block; }
-  .ot-cta-body { font-family:'DM Serif Display',serif; font-style:italic; font-size:17px; color:var(--muted); line-height:1.7; margin-bottom:48px; }
-  .ot-cta-btns { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
-  .ot-cta-main-lg { padding:18px 48px; background:var(--red); border:none; color:#fff; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:600; cursor:pointer; transition:all 0.25s; display:inline-flex; align-items:center; gap:10px; }
-  .ot-cta-main-lg:hover { background:#ff2d50; transform:translateY(-2px); box-shadow:0 16px 40px rgba(233,69,96,0.42); }
-  .ot-cta-main-lg:hover .ot-arrow { transform:translateX(4px); }
-  .ot-cta-out-lg { padding:18px 48px; background:transparent; border:1px solid rgba(255,255,255,0.14); color:rgba(255,255,255,0.75); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:500; cursor:pointer; transition:all 0.25s; display:inline-flex; align-items:center; gap:10px; }
-  .ot-cta-out-lg:hover { border-color:rgba(255,255,255,0.38); color:#fff; transform:translateY(-2px); background:rgba(255,255,255,0.04); }
-
-  /* FOOTER */
-  .ot-footer { background:var(--darker); border-top:1px solid var(--border); padding:40px 48px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:20px; }
-  .ot-footer-logo { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:5px; color:#fff; }
-  .ot-footer-logo em { color:var(--red); font-style:normal; }
-  .ot-footer-copy { font-size:13px; color:rgba(255,255,255,0.5); }
-  .ot-footer-contact { font-size:13px; color:rgba(255,255,255,0.5); display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:center; }
-  .ot-footer-contact a { color:rgba(255,255,255,0.7); text-decoration:none; transition:color 0.2s; }
-  .ot-footer-contact a:hover { color:var(--red2); text-decoration:underline; }
-
-  @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-
-  /* NAV LINKS + MOBILE MENU */
   .ot-nav-links { display:flex; gap:2px; margin-right:8px; }
-  .ot-nav-link { background:none; border:none; color:rgba(255,255,255,0.7); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; padding:10px 14px; cursor:pointer; border-radius:8px; transition:color 0.2s, background 0.2s; }
-  .ot-nav-link:hover { color:#fff; background:rgba(255,255,255,0.06); }
-  .ot-burger { display:none; align-items:center; justify-content:center; width:44px; height:44px; background:transparent; border:1px solid var(--border); border-radius:8px; color:#fff; cursor:pointer; }
-  .ot-drawer { position:fixed; top:68px; left:0; right:0; z-index:190; background:rgba(8,8,16,0.98); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); padding:8px 20px 20px; display:flex; flex-direction:column; animation:fadeIn 0.2s ease; }
-  .ot-drawer button { background:none; border:none; border-bottom:1px solid var(--border); color:rgba(255,255,255,0.85); font-family:'DM Sans',sans-serif; font-size:16px; font-weight:500; text-align:left; padding:16px 4px; min-height:52px; cursor:pointer; display:flex; align-items:center; gap:10px; }
+  .ot-nav-link { background:none; border:none; color:rgba(255,255,255,0.78); font-family:inherit; font-size:14px; font-weight:500; padding:10px 14px; cursor:pointer; border-radius:6px; transition:color .2s; }
+  .ot-nav-link:hover { color:#fff; }
+  .ot-btn-ghost, .ot-btn-red { font-family:inherit; font-size:14px; font-weight:600; padding:10px 20px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; transition:background .2s, border-color .2s; }
+  .ot-btn-ghost { background:transparent; border:1px solid rgba(255,255,255,0.28); color:#fff; }
+  .ot-btn-ghost:hover { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.5); }
+  .ot-btn-red { background:var(--accent); border:1px solid var(--accent); color:#fff; }
+  .ot-btn-red:hover { background:var(--accent-hover); border-color:var(--accent-hover); }
+  .ot-lg { padding:14px 28px; font-size:15px; }
+  .ot-burger { display:none; align-items:center; justify-content:center; width:44px; height:44px; background:transparent; border:1px solid var(--line); border-radius:6px; color:#fff; cursor:pointer; }
+  .ot-drawer { position:fixed; top:68px; left:0; right:0; z-index:190; background:rgba(14,15,18,0.98); border-bottom:1px solid var(--line); padding:8px 20px 20px; display:flex; flex-direction:column; animation:fadeIn .2s ease; }
+  .ot-drawer button { background:none; border:none; border-bottom:1px solid var(--line); color:rgba(255,255,255,0.88); font-family:inherit; font-size:16px; font-weight:500; text-align:left; padding:16px 4px; min-height:52px; cursor:pointer; display:flex; align-items:center; gap:10px; }
   .ot-drawer button:last-child { border-bottom:none; }
 
-  /* Anchored sections stop below the fixed nav */
+  /* HERO */
+  .ot-hero { position:relative; min-height:88vh; min-height:88svh; display:flex; align-items:flex-end; padding:140px var(--gutter) 80px; overflow:hidden; background:var(--surface); }
+  .ot-hero-media { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .ot-hero-shade { position:absolute; inset:0; background:linear-gradient(to top, rgba(14,15,18,0.96) 0%, rgba(14,15,18,0.72) 45%, rgba(14,15,18,0.5) 100%); }
+  .ot-hero-inner { position:relative; z-index:2; width:100%; animation:fadeUp .7s ease both; }
+  .ot-hero-title { font-weight:700; font-size:clamp(44px,7.5vw,92px); letter-spacing:-0.035em; line-height:1; margin-bottom:24px; }
+  .ot-hero-sub { font-size:clamp(17px,1.6vw,20px); line-height:1.6; color:var(--muted); max-width:560px; margin-bottom:36px; }
+  .ot-hero-btns, .ot-cta-btns { display:flex; gap:12px; flex-wrap:wrap; }
+
+  /* STATS */
+  .ot-stats-wrap { border-bottom:1px solid var(--line); }
+  .ot-stats { display:grid; grid-template-columns:repeat(4,1fr); max-width:1200px; margin:0 auto; padding:0 48px; }
+  .ot-stat { padding:28px 24px; border-left:1px solid var(--line); }
+  .ot-stat:first-child { border-left:none; padding-left:0; }
+  .ot-stat-num { font-size:40px; font-weight:600; letter-spacing:-0.02em; line-height:1; }
+  .ot-stat-label { font-size:14px; color:var(--muted); margin-top:8px; }
+
+  /* SECTIONS */
+  .ot-section, .ot-portfolio-wrap, .ot-reviews-wrap { padding:96px 48px; max-width:1200px; margin:0 auto; }
   .ot-section, .ot-how, .ot-portfolio-wrap, .ot-reviews-wrap { scroll-margin-top:68px; }
+  .ot-section-title { font-size:clamp(30px,3.6vw,44px); font-weight:700; letter-spacing:-0.025em; line-height:1.1; margin-bottom:14px; }
+  .ot-section-body { font-size:16px; line-height:1.65; color:var(--muted); max-width:560px; }
 
-  /* Keyboard focus + touch */
-  .ot-root button:focus-visible,
-  .ot-root a:focus-visible,
-  .ot-root [role="button"]:focus-visible { outline:2px solid var(--red2); outline-offset:3px; }
+  /* SERVICES */
+  .ot-services-grid { margin-top:48px; border-bottom:1px solid var(--line); }
+  .ot-svc { display:grid; grid-template-columns:minmax(0,5fr) minmax(0,6fr); gap:40px; padding:32px 0; border-top:1px solid var(--line); }
+  .ot-svc-name { font-size:20px; font-weight:600; line-height:1.3; letter-spacing:-0.01em; }
+  .ot-svc-desc { font-size:15px; line-height:1.7; color:var(--muted); }
+
+  /* HOW IT WORKS */
+  .ot-how { padding:96px var(--gutter); background:var(--surface); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .ot-steps { list-style:none; display:grid; grid-template-columns:repeat(5,1fr); gap:28px; margin-top:48px; }
+  .ot-step { border-top:2px solid var(--line); padding-top:18px; }
+  .ot-step-num { font-size:14px; font-weight:600; color:var(--accent-text); margin-bottom:14px; font-variant-numeric:tabular-nums; }
+  .ot-step-title { font-size:16px; font-weight:600; margin-bottom:8px; }
+  .ot-step-desc { font-size:14px; line-height:1.65; color:var(--muted); }
+
+  /* FEATURED VIDEO */
+  .ot-video-section { padding:96px var(--gutter); border-bottom:1px solid var(--line); }
+  .ot-video-header { margin-bottom:32px; }
+  .ot-video-header p { color:var(--muted); font-size:16px; line-height:1.6; margin-top:6px; }
+  .ot-video-frame, .ot-video-thumb { position:relative; border-radius:6px; overflow:hidden; border:1px solid var(--line); background:#000; }
+  .ot-video-frame iframe, .ot-video-frame video { display:block; width:100%; aspect-ratio:16/9; border:none; }
+  .ot-video-thumb { cursor:pointer; aspect-ratio:16/9; }
+  .ot-video-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .ot-thumb-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.25); }
+  .ot-play-btn { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:72px; height:72px; border-radius:50%; background:#fff; color:#111; display:flex; align-items:center; justify-content:center; transition:transform .2s; }
+  .ot-play-btn svg { margin-left:3px; }
+  .ot-video-thumb:hover .ot-play-btn { transform:translate(-50%,-50%) scale(1.06); }
+
+  /* PORTFOLIO */
+  .ot-proj-hero { position:relative; border-radius:6px; overflow:hidden; margin-top:48px; cursor:pointer; min-height:480px; display:flex; align-items:flex-end; border:1px solid var(--line); background:var(--surface); }
+  .ot-proj-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:transform .6s ease; }
+  .ot-proj-hero:hover .ot-proj-hero-img { transform:scale(1.02); }
+  .ot-proj-hero-overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.86) 0%, rgba(0,0,0,0.3) 55%, rgba(0,0,0,0.1) 100%); }
+  .ot-hero-no-img { position:absolute; inset:0; background:var(--surface); }
+  .ot-proj-hero-content { position:relative; z-index:2; padding:40px 44px; width:100%; }
+  .ot-proj-hero-tag { font-size:14px; font-weight:500; color:rgba(255,255,255,0.75); margin-bottom:8px; }
+  .ot-proj-hero-title { font-size:clamp(30px,4vw,48px); font-weight:700; letter-spacing:-0.025em; line-height:1.05; margin-bottom:16px; }
+  .ot-proj-hero-tags, .ot-proj-card-tags, .ot-modal-tags { display:flex; flex-wrap:wrap; gap:6px; }
+  .ot-proj-hero-tags { margin-bottom:18px; }
+  .ot-proj-hero-tag-pill, .ot-proj-card-tag, .ot-modal-tag { padding:3px 10px; border:1px solid rgba(255,255,255,0.22); border-radius:4px; font-size:12px; font-weight:500; color:rgba(255,255,255,0.78); }
+  .ot-proj-hero-desc { font-size:15px; line-height:1.65; color:rgba(255,255,255,0.72); max-width:580px; margin-bottom:24px; }
+  .ot-view-btn { display:inline-flex; align-items:center; padding:10px 20px; background:#fff; color:#111; border-radius:6px; font-size:14px; font-weight:600; transition:background .2s; }
+  .ot-proj-hero:hover .ot-view-btn { background:#e4e4e4; }
+  .ot-proj-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:20px; }
+  .ot-proj-card { border-radius:6px; overflow:hidden; border:1px solid var(--line); background:var(--surface); cursor:pointer; display:flex; flex-direction:column; transition:border-color .2s; }
+  .ot-proj-card:hover { border-color:rgba(255,255,255,0.3); }
+  .ot-proj-card-img { position:relative; aspect-ratio:4/3; overflow:hidden; background:#0a0a0c; }
+  .ot-proj-card-img img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .4s ease; }
+  .ot-proj-card:hover .ot-proj-card-img img { transform:scale(1.03); }
+  .ot-proj-card-no-img { width:100%; height:100%; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; background:var(--surface); }
+  .ot-proj-empty-label { font-size:40px; font-weight:700; color:rgba(255,255,255,0.1); }
+  .ot-proj-card-body { padding:18px 20px 20px; flex:1; }
+  .ot-proj-card-client { font-size:13px; color:var(--faint); margin-bottom:4px; }
+  .ot-proj-card-title { font-size:19px; font-weight:600; letter-spacing:-0.01em; line-height:1.25; margin-bottom:12px; }
+
+  /* REVIEWS */
+  .ot-review-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; margin-top:48px; }
+  .ot-review-card { background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:24px; display:flex; flex-direction:column; gap:14px; }
+  .ot-review-stars { display:flex; gap:3px; }
+  .ot-review-star { width:16px; height:16px; }
+  .ot-review-comment { font-size:15px; line-height:1.65; color:var(--muted); flex:1; }
+  .ot-review-author { display:flex; flex-direction:column; gap:2px; padding-top:14px; border-top:1px solid var(--line); }
+  .ot-review-name { font-weight:600; font-size:15px; }
+  .ot-review-meta { font-size:13px; color:var(--faint); }
+
+  /* PROJECT MODAL */
+  .ot-modal-backdrop { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.88); animation:fadeIn .2s ease; }
+  .ot-modal-scroll { position:absolute; inset:0; overflow-y:auto; display:flex; align-items:flex-start; justify-content:center; padding:40px 20px; overscroll-behavior:contain; }
+  .ot-modal { background:var(--surface); border:1px solid var(--line); border-radius:8px; width:100%; max-width:880px; overflow:hidden; position:relative; animation:slideUp .25s ease; }
+  .ot-modal-close { position:absolute; top:16px; right:16px; z-index:20; width:44px; height:44px; background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; cursor:pointer; transition:background .2s; }
+  .ot-modal-close:hover { background:var(--accent); }
+  .ot-modal-hero { position:relative; aspect-ratio:16/7; overflow:hidden; background:#0a0a0c; }
+  .ot-modal-hero img { width:100%; height:100%; object-fit:cover; display:block; }
+  .ot-modal-hero-overlay { position:absolute; inset:0; background:linear-gradient(to top, var(--surface) 0%, transparent 40%); }
+  .ot-modal-body { padding:32px 40px; }
+  .ot-modal-client { font-size:14px; color:var(--faint); margin-bottom:6px; }
+  .ot-modal-title { font-size:clamp(28px,3.5vw,40px); font-weight:700; letter-spacing:-0.025em; line-height:1.1; margin-bottom:16px; }
+  .ot-modal-tags { margin-bottom:20px; }
+  .ot-modal-desc { font-size:15px; line-height:1.7; color:var(--muted); margin-bottom:32px; }
+  .ot-modal-gallery-label { font-size:14px; font-weight:600; color:var(--muted); margin-bottom:14px; }
+  .ot-modal-gallery { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .ot-modal-gallery-item { aspect-ratio:4/3; overflow:hidden; border-radius:4px; cursor:pointer; position:relative; background:#0a0a0c; }
+  .ot-modal-gallery-item img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .3s ease; }
+  .ot-modal-gallery-item:hover img { transform:scale(1.04); }
+  .ot-modal-gallery-item-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.3); opacity:0; transition:opacity .2s; display:flex; align-items:center; justify-content:center; }
+  .ot-modal-gallery-item:hover .ot-modal-gallery-item-overlay { opacity:1; }
+
+  /* LIGHTBOX */
+  .ot-lightbox { position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.95); display:flex; align-items:center; justify-content:center; animation:fadeIn .2s ease; }
+  .ot-lightbox-img { max-width:90vw; max-height:88vh; border-radius:4px; object-fit:contain; }
+  .ot-lightbox-close, .ot-lightbox-nav { position:absolute; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.18); color:#fff; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s; }
+  .ot-lightbox-close { top:24px; right:28px; width:44px; height:44px; }
+  .ot-lightbox-nav { top:50%; transform:translateY(-50%); width:50px; height:50px; }
+  .ot-lightbox-close:hover, .ot-lightbox-nav:hover { background:rgba(255,255,255,0.22); }
+  .ot-lightbox-prev { left:24px; }
+  .ot-lightbox-next { right:24px; }
+  .ot-lightbox-counter { position:absolute; bottom:24px; left:50%; transform:translateX(-50%); font-size:13px; color:rgba(255,255,255,0.6); }
+
+  /* CTA + FOOTER */
+  .ot-cta-section { padding:96px var(--gutter); border-top:1px solid var(--line); }
+  .ot-cta-title { font-size:clamp(34px,5vw,60px); font-weight:700; letter-spacing:-0.03em; line-height:1.05; margin-bottom:16px; max-width:720px; }
+  .ot-cta-body { font-size:17px; line-height:1.6; color:var(--muted); max-width:520px; margin-bottom:32px; }
+  .ot-footer { border-top:1px solid var(--line); padding:32px var(--gutter); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+  .ot-footer-logo { font-weight:700; font-size:16px; letter-spacing:0.14em; }
+  .ot-footer-logo em { color:var(--accent-text); font-style:normal; }
+  .ot-footer-copy { font-size:13px; color:var(--faint); }
+  .ot-footer-contact { font-size:13px; display:flex; flex-wrap:wrap; gap:6px 20px; }
+  .ot-footer-contact a { color:var(--muted); text-decoration:none; transition:color .2s; }
+  .ot-footer-contact a:hover { color:#fff; text-decoration:underline; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+  /* Focus + touch */
+  .ot-root button:focus-visible, .ot-root a:focus-visible, .ot-root [role="button"]:focus-visible { outline:2px solid var(--accent-text); outline-offset:3px; }
   .ot-root button, .ot-root [role="button"] { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
-  .ot-svc-icon, .ot-proj-card, .ot-proj-hero { -webkit-tap-highlight-color:transparent; }
-
   @media (min-width:769px) { .ot-drawer { display:none; } }
-
   @media (prefers-reduced-motion: reduce) {
     .ot-root *, .ot-root *::before, .ot-root *::after { animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
-    .ot-svc, .ot-step { opacity:1; transform:none; }
   }
 
   /* RESPONSIVE */
   @media (max-width:900px) {
-    .ot-proj-grid { grid-template-columns: repeat(2,1fr); }
-    .ot-proj-hero-content { padding: 28px 28px; }
+    .ot-proj-grid { grid-template-columns:repeat(2,1fr); }
+    .ot-steps { grid-template-columns:repeat(2,1fr); }
+    .ot-svc { grid-template-columns:1fr; gap:12px; }
+    .ot-proj-hero-content { padding:28px; }
   }
   @media (max-width:768px) {
-    .ot-nav { padding:0 20px; }
-    .ot-hero { padding:120px 20px 100px; }
-    .ot-stats { grid-template-columns:repeat(2,1fr); }
-    .ot-stat:nth-child(2) { border-right:none; }
-    .ot-section { padding:72px 20px; }
-    .ot-services-grid { grid-template-columns:1fr; }
-    .ot-how { padding:72px 20px; }
-    .ot-steps { grid-template-columns:1fr; gap:28px; }
-    .ot-steps::before { display:none; }
-    .ot-cta-section { padding:80px 20px; }
-    .ot-footer { padding:32px 20px; flex-direction:column; text-align:center; }
-    .ot-portfolio-wrap { padding:72px 20px; }
-    .ot-proj-grid { grid-template-columns:1fr; }
-    .ot-proj-hero { min-height:360px; }
-    .ot-proj-hero-title { font-size:36px; }
-    .ot-modal-body { padding:24px 20px; }
-    .ot-modal-gallery { grid-template-columns:repeat(2,1fr); }
-    .ot-video-section { padding:72px 20px; }
-
-    /* Nav: compact logo + one primary button + menu */
-    .ot-logo { font-size:22px; letter-spacing:4px; }
+    .ot-root { --gutter:20px; }
+    .ot-logo { font-size:17px; }
     .ot-nav-right { gap:8px; }
     .ot-nav-links, .ot-hide-mobile { display:none; }
     .ot-burger { display:inline-flex; }
-    .ot-btn-red { padding:9px 14px; font-size:13px; }
-
-    /* Hero: title must fit a 360px screen, buttons full-width */
-    .ot-hero-title { font-size:clamp(44px,15vw,100px); letter-spacing:3px; }
-    .ot-hero-sub { margin:20px 0 36px; }
-    .ot-hero-btns { flex-direction:column; align-items:stretch; width:100%; max-width:360px; }
-    .ot-cta-main, .ot-cta-out { width:100%; justify-content:center; padding:16px 24px; }
-    .ot-cta-btns { flex-direction:column; align-items:stretch; max-width:360px; margin:0 auto; }
-    .ot-cta-main-lg, .ot-cta-out-lg { width:100%; justify-content:center; padding:16px 24px; }
-    .ot-scroll-hint { display:none; }
-
-    /* Stats */
-    .ot-stat:nth-child(-n+2) { border-bottom:1px solid var(--border); }
-    .ot-stat-num { font-size:36px; }
-    .ot-stat-label { font-size:11px; }
-
-    /* Content */
-    .ot-svc { padding:24px; }
-    .ot-svc-desc { font-size:14px; }
-    .ot-step { flex-direction:row; align-items:flex-start; text-align:left; gap:16px; padding:0; }
-    .ot-step-num { margin-bottom:0; flex-shrink:0; }
-    .ot-step-title { font-size:15px; margin-bottom:4px; }
-    .ot-step-desc { font-size:13px; }
+    .ot-nav .ot-btn-red { padding:9px 14px; font-size:13px; }
+    .ot-hero { min-height:80svh; padding:110px var(--gutter) 56px; }
+    .ot-hero-btns, .ot-cta-btns { flex-direction:column; align-items:stretch; max-width:360px; }
+    .ot-stats { grid-template-columns:repeat(2,1fr); padding:0 20px; }
+    .ot-stat { padding:20px 16px; }
+    .ot-stat:nth-child(odd) { border-left:none; padding-left:0; }
+    .ot-stat:nth-child(-n+2) { border-bottom:1px solid var(--line); }
+    .ot-stat-num { font-size:32px; }
+    .ot-section, .ot-portfolio-wrap, .ot-reviews-wrap { padding:64px 20px; }
+    .ot-how, .ot-video-section, .ot-cta-section { padding-top:64px; padding-bottom:64px; }
+    .ot-steps { grid-template-columns:1fr; gap:0; }
+    .ot-step { padding:18px 0 22px; }
+    .ot-proj-grid { grid-template-columns:1fr; }
+    .ot-proj-hero { min-height:360px; }
     .ot-proj-hero-content { padding:24px 20px; }
-    .ot-proj-card-tag, .ot-proj-hero-tag-pill { font-size:11px; }
-
-    /* Project window fills the phone screen */
     .ot-modal-scroll { padding:0; }
     .ot-modal { border-radius:0; min-height:100%; }
-    .ot-modal-desc { font-size:15px; }
+    .ot-modal-body { padding:24px 20px; }
+    .ot-modal-gallery { grid-template-columns:repeat(2,1fr); }
+    .ot-footer { flex-direction:column; align-items:flex-start; }
     .ot-lightbox-nav { width:42px; height:42px; }
     .ot-lightbox-prev { left:10px; }
     .ot-lightbox-next { right:10px; }
@@ -666,8 +327,6 @@ export default function HomePage() {
   const [videoPlaying,setVideoPlaying]= useState(false);  // play embed on click
   const [menuOpen,    setMenuOpen]    = useState(false);  // mobile menu
 
-  const svcRefs  = useRef([]);
-  const stepRefs = useRef([]);
   const portfolioRef = useRef(null);
   const servicesRef  = useRef(null);
   const howRef       = useRef(null);
@@ -694,15 +353,6 @@ export default function HomePage() {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  useEffect(() => {
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-    }, { threshold: 0.1 });
-    svcRefs.current.forEach(el => el && obs.observe(el));
-    stepRefs.current.forEach(el => el && obs.observe(el));
-    return () => obs.disconnect();
   }, []);
 
   // Keyboard: Esc closes lightbox / project / menu, arrows flip photos
@@ -768,6 +418,8 @@ export default function HomePage() {
 
   const video = content?.featuredVideo;
   const embedUrl = video?.isActive ? getEmbedUrl(video.url) : null;
+  // Hero backdrop: a cover photo from the portfolio (none = plain dark hero)
+  const heroBg = [...allProjects].reverse().map(getCover).find(Boolean) || null;
 
   // Get YouTube thumbnail
   const getYTThumb = (url) => {
@@ -778,7 +430,6 @@ export default function HomePage() {
   return (
     <div className="ot-root">
       <style>{css}</style>
-      <div className="ot-noise" />
 
       {/* NAV */}
       <nav className={`ot-nav${scrolled ? ' scrolled' : ''}`} aria-label="Main">
@@ -787,15 +438,15 @@ export default function HomePage() {
         </a>
         <div className="ot-nav-right">
           <div className="ot-nav-links">
+            <button className="ot-nav-link" onClick={() => goTo(portfolioRef)}>Portfolio</button>
             <button className="ot-nav-link" onClick={() => goTo(servicesRef)}>Services</button>
             <button className="ot-nav-link" onClick={() => goTo(howRef)}>How it works</button>
-            <button className="ot-nav-link" onClick={() => goTo(portfolioRef)}>Portfolio</button>
           </div>
           <button className="ot-btn-ghost ot-hide-mobile" onClick={() => navigate('/login')}>
-            <IconSignIn /> Sign In
+            <IconSignIn /> Sign in
           </button>
           <button className="ot-btn-red" onClick={() => navigate('/client/inquiry')}>
-            Get Started <IconArrow />
+            Send an inquiry
           </button>
           <button className="ot-burger" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}
             onClick={() => setMenuOpen(o => !o)}>
@@ -806,99 +457,47 @@ export default function HomePage() {
 
       {menuOpen && (
         <div className="ot-drawer">
+          <button onClick={() => goTo(portfolioRef)}>Portfolio</button>
           <button onClick={() => goTo(servicesRef)}>Services</button>
           <button onClick={() => goTo(howRef)}>How it works</button>
-          <button onClick={() => goTo(portfolioRef)}>Portfolio</button>
-          <button onClick={() => { setMenuOpen(false); navigate('/login'); }}><IconSignIn /> Sign In</button>
+          <button onClick={() => { setMenuOpen(false); navigate('/login'); }}><IconSignIn /> Sign in</button>
         </div>
       )}
 
       {/* HERO */}
-      <section className="ot-hero" style={{ maxWidth: '100%' }}>
-        <div className="ot-hero-glow" />
-        <div className="ot-hero-grid" />
-        <div className="ot-eyebrow">
-          <div className="ot-dot" /> OneTake — Client Portal
-        </div>
-        <h1 className="ot-hero-title">
-          LIVE<span className="red">TAKE</span>
-          <span className="ghost">PRODUCTIONS</span>
-        </h1>
-        <p className="ot-hero-sub">
-          Your events, captured flawlessly. From inquiry to final delivery — every step managed in one place.
-        </p>
-        <div className="ot-hero-btns">
-          <button className="ot-cta-main" onClick={() => navigate('/client/inquiry')}>
-            Inquire About Your Event
-            <span className="ot-arrow"><IconArrow /></span>
-          </button>
-          <button className="ot-cta-out" onClick={() => navigate('/login')}>
-            <IconSignIn /> Sign In to Dashboard
-          </button>
-        </div>
-        <div className="ot-scroll-hint">
-          <div className="ot-scroll-line" /> Scroll
+      <section className="ot-hero">
+        {heroBg && <img className="ot-hero-media" src={heroBg} alt="" />}
+        <div className="ot-hero-shade" />
+        <div className="ot-hero-inner">
+          <h1 className="ot-hero-title">Livetake Productions</h1>
+          <p className="ot-hero-sub">
+            Multi-camera event coverage, photo and video documentation, and livestreaming. Send an inquiry and follow your booking from quotation to final delivery in one place.
+          </p>
+          <div className="ot-hero-btns">
+            <button className="ot-btn-red ot-lg" onClick={() => navigate('/client/inquiry')}>Send an inquiry</button>
+            <button className="ot-btn-ghost ot-lg" onClick={() => goTo(portfolioRef)}>See our work</button>
+          </div>
         </div>
       </section>
 
       {/* STATS */}
-      <div className="ot-stats">
-        {STATS.map(s => (
-          <div className="ot-stat" key={s.label}>
-            <div className="ot-stat-num"><Counter target={s.num} /></div>
-            <div className="ot-stat-label">{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* SERVICES */}
-      <div className="ot-section" id="services" ref={servicesRef}>
-        <div className="ot-section-tag">What We Offer</div>
-        <h2 className="ot-section-title">OUR SERVICES</h2>
-        <p className="ot-section-body">
-          Professional production services tailored for every type of event — from intimate celebrations to large-scale corporate broadcasts.
-        </p>
-        <div className="ot-services-grid">
-          {SERVICES.map((svc, i) => (
-            <div key={i} className="ot-svc" ref={el => svcRefs.current[i] = el} style={{ transitionDelay: `${i * 0.1}s` }}>
-              <div className="ot-svc-icon">{svc.icon}</div>
-              <div className="ot-svc-name">{svc.name}</div>
-              <p className="ot-svc-desc">{svc.desc}</p>
+      <div className="ot-stats-wrap">
+        <div className="ot-stats">
+          {STATS.map(s => (
+            <div className="ot-stat" key={s.label}>
+              <div className="ot-stat-num"><Counter target={s.num} /></div>
+              <div className="ot-stat-label">{s.label}</div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* HOW IT WORKS */}
-      <div className="ot-how" id="how-it-works" ref={howRef}>
-        <div className="ot-how-inner">
-          <div className="ot-section-tag">The Process</div>
-          <h2 className="ot-section-title">HOW IT WORKS</h2>
-          <p className="ot-section-body">
-            From your first inquiry to the final deliverable, Onetake manages every step of your project seamlessly.
-          </p>
-          <div className="ot-steps">
-            {STEPS.map((step, i) => (
-              <div key={i} className="ot-step" ref={el => stepRefs.current[i] = el} style={{ transitionDelay: `${i * 0.12}s` }}>
-                <div className="ot-step-num">{step.n}</div>
-                <div className="ot-step-text">
-                  <div className="ot-step-title">{step.title}</div>
-                  <p className="ot-step-desc">{step.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
       {/* ── FEATURED VIDEO (only if admin enabled it) ── */}
       {embedUrl && (
         <div className="ot-video-section">
-          <div className="ot-video-glow" />
           <div className="ot-video-inner">
             <div className="ot-video-header">
-              <div className="ot-section-tag" style={{ justifyContent: 'center', marginBottom: 16 }}>Featured</div>
-              <h2 className="ot-section-title" style={{ textAlign: 'center' }}>{video.title || 'BEHIND THE LENS'}</h2>
+              <h2 className="ot-section-title">{video.title || 'Behind the lens'}</h2>
               {video.subtitle && <p>{video.subtitle}</p>}
             </div>
 
@@ -934,10 +533,9 @@ export default function HomePage() {
 
       {/* ── PORTFOLIO ── */}
       <div className="ot-portfolio-wrap" id="portfolio" ref={portfolioRef}>
-        <div className="ot-section-tag">Our Work</div>
-        <h2 className="ot-section-title">PORTFOLIO</h2>
+        <h2 className="ot-section-title">Portfolio</h2>
         <p className="ot-section-body">
-          A showcase of events we've proudly produced — from corporate briefings to large-scale hybrid broadcasts.
+          Recent events we've produced, from corporate briefings to large hybrid broadcasts.
         </p>
 
         {allProjects.length === 0 && (
@@ -965,7 +563,7 @@ export default function HomePage() {
                 <p className="ot-proj-hero-desc">{heroProject.description}</p>
               )}
               <span className="ot-view-btn">
-                View Gallery <IconArrow />
+                View gallery
               </span>
             </div>
           </div>
@@ -978,12 +576,7 @@ export default function HomePage() {
               <div key={proj._id} className="ot-proj-card" aria-label={`View ${proj.title} gallery`} {...press(() => openProject(proj))}>
                 <div className="ot-proj-card-img">
                   {getCover(proj)
-                    ? <>
-                        <img src={getCover(proj)} alt={proj.title} loading="lazy" />
-                        <div className="ot-proj-card-img-overlay">
-                          <div className="ot-proj-card-hover-icon"><IconGrid /></div>
-                        </div>
-                      </>
+                    ? <img src={getCover(proj)} alt={proj.title} loading="lazy" />
                     : <div className="ot-proj-card-no-img">
                         <div className="ot-proj-empty-label">{proj.client?.[0] || '?'}</div>
                       </div>}
@@ -1004,13 +597,45 @@ export default function HomePage() {
         )}
       </div>
 
+      {/* SERVICES */}
+      <div className="ot-section" id="services" ref={servicesRef}>
+        <h2 className="ot-section-title">Services</h2>
+        <p className="ot-section-body">
+          Coverage for every kind of event, from private celebrations to corporate broadcasts.
+        </p>
+        <div className="ot-services-grid">
+          {SERVICES.map((svc, i) => (
+            <div key={i} className="ot-svc">
+              <h3 className="ot-svc-name">{svc.name}</h3>
+              <p className="ot-svc-desc">{svc.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* HOW IT WORKS */}
+      <div className="ot-how" id="how-it-works" ref={howRef}>
+        <h2 className="ot-section-title">How it works</h2>
+        <p className="ot-section-body">
+          Five steps from your first inquiry to the finished content.
+        </p>
+        <ol className="ot-steps">
+          {STEPS.map((step, i) => (
+            <li key={i} className="ot-step">
+              <div className="ot-step-num">{step.n}</div>
+              <div className="ot-step-title">{step.title}</div>
+              <p className="ot-step-desc">{step.desc}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+
       {/* ── REVIEWS ── */}
       {reviews && reviews.length > 0 && (
         <div className="ot-reviews-wrap" id="reviews" ref={reviewsRef}>
-          <div className="ot-section-tag">Client Feedback</div>
-          <h2 className="ot-section-title">WHAT CLIENTS SAY</h2>
+          <h2 className="ot-section-title">What clients say</h2>
           <p className="ot-section-body">
-            Real feedback from clients whose events we've had the privilege of covering.
+            Feedback from clients whose events we've covered.
           </p>
 
           <div className="ot-review-grid">
@@ -1019,7 +644,7 @@ export default function HomePage() {
                 <div className="ot-review-stars" aria-label={`${r.rating} out of 5 stars`}>
                   {[1, 2, 3, 4, 5].map(n => (
                     <svg key={n} viewBox="0 0 24 24" className="ot-review-star"
-                      fill={n <= r.rating ? '#facc15' : 'none'} stroke={n <= r.rating ? '#facc15' : 'rgba(255,255,255,0.2)'} strokeWidth="1.5">
+                      fill={n <= r.rating ? '#e0a93b' : 'none'} stroke={n <= r.rating ? '#e0a93b' : 'rgba(255,255,255,0.2)'} strokeWidth="1.5">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                     </svg>
                   ))}
@@ -1065,7 +690,7 @@ export default function HomePage() {
               {/* Gallery */}
               {activeProj.images?.length > 0 && (
                 <>
-                  <div className="ot-modal-gallery-label">Gallery · {activeProj.images.length} photo{activeProj.images.length !== 1 ? 's' : ''}</div>
+                  <div className="ot-modal-gallery-label">Gallery ({activeProj.images.length})</div>
                   <div className="ot-modal-gallery">
                     {activeProj.images.map((img, i) => (
                       <div key={i} className="ot-modal-gallery-item" aria-label={`Open photo ${i + 1}`}
@@ -1097,43 +722,34 @@ export default function HomePage() {
       {lightbox.open && (
         <div className="ot-lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer"
           onClick={closeLightbox} onTouchStart={onLbTouchStart} onTouchEnd={onLbTouchEnd}>
-          <button className="ot-lightbox-close" aria-label="Close photo" onClick={closeLightbox}>✕</button>
+          <button className="ot-lightbox-close" aria-label="Close photo" onClick={closeLightbox}><IconClose /></button>
           {lightbox.images.length > 1 && (
-            <button className="ot-lightbox-nav ot-lightbox-prev" aria-label="Previous photo" onClick={e => { e.stopPropagation(); lbPrev(); }}>‹</button>
+            <button className="ot-lightbox-nav ot-lightbox-prev" aria-label="Previous photo" onClick={e => { e.stopPropagation(); lbPrev(); }}><IconChevL /></button>
           )}
           <img className="ot-lightbox-img" src={lightbox.images[lightbox.idx]} alt={`Photo ${lightbox.idx + 1} of ${lightbox.images.length}`} onClick={e => e.stopPropagation()} />
           {lightbox.images.length > 1 && (
-            <button className="ot-lightbox-nav ot-lightbox-next" aria-label="Next photo" onClick={e => { e.stopPropagation(); lbNext(); }}>›</button>
+            <button className="ot-lightbox-nav ot-lightbox-next" aria-label="Next photo" onClick={e => { e.stopPropagation(); lbNext(); }}><IconChevR /></button>
           )}
           <div className="ot-lightbox-counter">{lightbox.idx + 1} / {lightbox.images.length}</div>
         </div>
       )}
 
-      {/* BIG CTA */}
+      {/* CTA */}
       <div className="ot-cta-section">
-        <div className="ot-cta-glow" />
-        <div className="ot-cta-inner">
-          <div className="ot-section-tag" style={{ justifyContent:'center', marginBottom: 20 }}>Ready to Book?</div>
-          <h2 className="ot-cta-title">LET'S MAKE YOUR<em>EVENT UNFORGETTABLE</em></h2>
-          <p className="ot-cta-body">
-            Join hundreds of clients who trust Livetake Productions to capture their most important moments.
-            Your story deserves to be told right — in one take.
-          </p>
-          <div className="ot-cta-btns">
-            <button className="ot-cta-main-lg" onClick={() => navigate('/client/inquiry')}>
-              Submit an Inquiry <span className="ot-arrow"><IconArrow /></span>
-            </button>
-            <button className="ot-cta-out-lg" onClick={() => navigate('/login')}>
-              Existing Client? Sign In
-            </button>
-          </div>
+        <h2 className="ot-cta-title">Tell us about your event</h2>
+        <p className="ot-cta-body">
+          Share the date, venue, and what you need covered. We'll follow up with a custom quotation.
+        </p>
+        <div className="ot-cta-btns">
+          <button className="ot-btn-red ot-lg" onClick={() => navigate('/client/inquiry')}>Send an inquiry</button>
+          <button className="ot-btn-ghost ot-lg" onClick={() => navigate('/login')}>Sign in</button>
         </div>
       </div>
 
       {/* FOOTER */}
       <footer className="ot-footer">
         <div className="ot-footer-logo">ONE<em>TAKE</em></div>
-        <div className="ot-footer-copy">© 2026 Livetake Productions · Dasmariñas, Cavite</div>
+        <div className="ot-footer-copy">© 2026 Livetake Productions, Dasmariñas, Cavite</div>
         <div className="ot-footer-contact">
           <a href="tel:+639068642868">09XXXXXXXX</a>
           <a href="mailto:livetakeproductions@gmail.com">livetakeproductions@gmail.com</a>
