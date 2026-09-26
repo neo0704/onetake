@@ -52,6 +52,11 @@ function QuotationCard({ q }) {
     if (next && !commentsLoaded) loadComments();
   };
 
+  // Before the thread is expanded (and its comments fetched), q.comments is
+  // already present from the /quotations list response — use that for the
+  // count so it's visible immediately instead of only after expanding.
+  const commentCount = commentsLoaded ? comments.length : (q.comments?.length || 0);
+
   const postComment = async () => {
     const text = commentText.trim();
     if (!text) return;
@@ -326,7 +331,9 @@ function QuotationCard({ q }) {
         <button onClick={toggleComments}
           className="flex items-center gap-2 py-2 text-white/40 hover:text-white transition-colors text-sm">
           <MessageSquare className="w-4 h-4" />
-          {showComments ? 'Hide comments' : `Comments${comments.length ? ` (${comments.length})` : ''}`}
+          {showComments
+            ? 'Hide comments'
+            : `Comments${commentCount ? ` (${commentCount})` : ''}`}
         </button>
 
         {showComments && (

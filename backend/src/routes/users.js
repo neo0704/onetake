@@ -3,23 +3,37 @@ const router  = express.Router();
 const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
+const cloudinary = require('cloudinary').v2;
 const User    = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
 
-// ── Multer for profile avatars ────────────────────────────────────────────────
-const avatarUploadDir = path.join(__dirname, '../../uploads/avatars');
-if (!fs.existsSync(avatarUploadDir)) fs.mkdirSync(avatarUploadDir, { recursive: true });
-
-const avatarStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, avatarUploadDir),
-  filename:    (req, file, cb) => cb(null, `avatar-${req.user.id}-${Date.now()}${path.extname(file.originalname)}`),
+// ── Cloudinary (permanent image storage) ───────────────────────────────────
+// Uses the same CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
+// env vars already configured for uploadRoute.js / paymentController.js.
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+// ── Multer for profile avatars ────────────────────────────────────────────────
+// Keep the file in memory, then send it straight to Cloudinary.
+// Nothing is written to the server's disk (Render wipes it on every restart).
 const avatarUpload = multer({
-  storage: avatarStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (req, file, cb) =>
     file.mimetype.startsWith('image/') ? cb(null, true) : cb(new Error('Only image files are allowed')),
 });
+
+const uploadToCloudinary = (buffer, folder) =>
+  new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: `onetake/${folder}`, resource_type: 'image' },
+      (err, result) => (err ? reject(err) : resolve(result))
+    );
+    stream.end(buffer);
+  });
 // ─────────────────────────────────────────────────────────────────────────────
 
 // GET /api/users — admin gets all, filtered by role
@@ -83,8 +97,12 @@ router.put('/profile', protect, async (req, res) => {
 router.post('/profile/avatar', protect, avatarUpload.single('avatar'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'No image uploaded' });
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      return res.status(500).json({ success: false, message: 'Image storage is not configured on the server' });
+    }
 
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    const result = await uploadToCloudinary(req.file.buffer, 'avatars');
+    const avatarUrl = result.secure_url;
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
@@ -102,9 +120,17 @@ router.post('/profile/avatar', protect, avatarUpload.single('avatar'), async (re
 router.delete('/profile/avatar', protect, async (req, res) => {
   try {
     const current = await User.findById(req.user.id).select('avatar');
-    if (current?.avatar) {
-      const filePath = path.join(__dirname, '../..', current.avatar); // avatar stored as '/uploads/avatars/xxx'
-      fs.unlink(filePath, () => {}); // best-effort cleanup; ignore if already gone
+
+    if (current?.avatar?.includes('res.cloudinary.com')) {
+      // New-style avatar: stored on Cloudinary
+      const m = current.avatar.match(/\/upload\/(?:v\d+\/)?(.+?)\.[a-z0-9]+$/i);
+      if (m) await cloudinary.uploader.destroy(m[1]).catch(() => {}); // best-effort
+    } else if (current?.avatar?.startsWith('/uploads/')) {
+      // Old-style avatar: was saved on the server's disk before this endpoint
+      // moved to Cloudinary. Most of these are already gone (Render wipes disk
+      // on restart), so this is just a best-effort cleanup for any that remain.
+      const filePath = path.join(__dirname, '../..', current.avatar);
+      fs.unlink(filePath, () => {});
     }
 
     const user = await User.findByIdAndUpdate(

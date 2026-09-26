@@ -29,7 +29,7 @@ const STATUS_LABELS_Q = {
 };
 
 // ── Shared comments logic (used by modal detail view and inline table row) ──
-function useComments(quotationId, active) {
+function useComments(quotationId, active, onPosted) {
   const [comments, setComments] = useState([]);
   const [loading,  setLoading]  = useState(false);
   const [loaded,   setLoaded]   = useState(false);
@@ -55,6 +55,7 @@ function useComments(quotationId, active) {
       const { data } = await api.post(`/quotations/${quotationId}/comments`, { text: value });
       setComments(prev => [...prev, data.comment]);
       setText('');
+      onPosted?.(quotationId, data.comment);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to post comment');
     } finally {
@@ -65,8 +66,8 @@ function useComments(quotationId, active) {
   return { comments, loading, loaded, text, setText, posting, postComment };
 }
 
-function CommentsThread({ quotationId, active, compact }) {
-  const { comments, loading, loaded, text, setText, posting, postComment } = useComments(quotationId, active);
+function CommentsThread({ quotationId, active, compact, onPosted }) {
+  const { comments, loading, loaded, text, setText, posting, postComment } = useComments(quotationId, active, onPosted);
 
   return (
     <div className={compact ? 'space-y-2' : 'space-y-3'}>
@@ -118,7 +119,7 @@ function CommentsThread({ quotationId, active, compact }) {
   );
 }
 
-function QuotationDetail({ q, onClose, onSend, sending, onPrint }) {
+function QuotationDetail({ q, onClose, onSend, sending, onPrint, onCommentPosted }) {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999] flex items-start justify-center p-4 overflow-y-auto">
       <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl w-full max-w-2xl my-8 shadow-2xl">
@@ -311,7 +312,7 @@ function QuotationDetail({ q, onClose, onSend, sending, onPrint }) {
               <MessageSquare className="w-3.5 h-3.5" />
               Comments
             </p>
-            <CommentsThread quotationId={q._id} active={true} />
+            <CommentsThread quotationId={q._id} active={true} onPosted={onCommentPosted} />
           </div>
         </div>
       </div>
@@ -497,6 +498,14 @@ export default function AdminQuotations() {
 
   const openSendModal = (q) => setSendTarget(q);
 
+  // Keep the collapsed row's comment-count badge in sync when a comment is
+  // posted from the expanded thread, without needing a full refetch.
+  const handleCommentPosted = (quotationId, comment) => {
+    setQuotations(prev => prev.map(q =>
+      q._id === quotationId ? { ...q, comments: [...(q.comments || []), comment] } : q
+    ));
+  };
+
   const filtered = statusFilter === 'all'
     ? quotations
     : quotations.filter(q => q.status === statusFilter);
@@ -558,6 +567,9 @@ export default function AdminQuotations() {
                   <button onClick={() => setExpandedId(prev => prev === q._id ? null : q._id)}
                     className="btn-ghost text-xs py-1.5 px-2.5 flex items-center gap-1 text-white/50 hover:text-white">
                     <MessageSquare className="w-3.5 h-3.5" />
+                    {q.comments?.length > 0 && (
+                      <span className="badge bg-primary/20 text-primary text-[10px] px-1.5 py-0">{q.comments.length}</span>
+                    )}
                     {expandedId === q._id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
                   {q.status === 'draft' && (
@@ -574,7 +586,7 @@ export default function AdminQuotations() {
                     <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5">
                       <MessageSquare className="w-3.5 h-3.5" /> Comments
                     </p>
-                    <CommentsThread quotationId={q._id} active={expandedId === q._id} compact />
+                    <CommentsThread quotationId={q._id} active={expandedId === q._id} compact onPosted={handleCommentPosted} />
                   </div>
                 )}
               </div>
@@ -618,6 +630,9 @@ export default function AdminQuotations() {
                       <button onClick={() => setExpandedId(prev => prev === q._id ? null : q._id)}
                         className="btn-ghost text-xs py-1 px-2 flex items-center gap-1 text-white/50 hover:text-white">
                         <MessageSquare className="w-3.5 h-3.5" />
+                        {q.comments?.length > 0 && (
+                          <span className="badge bg-primary/20 text-primary text-[10px] px-1.5 py-0">{q.comments.length}</span>
+                        )}
                         {expandedId === q._id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </button>
                       {q.status === 'draft' && (
@@ -636,7 +651,7 @@ export default function AdminQuotations() {
                       <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5">
                         <MessageSquare className="w-3.5 h-3.5" /> Comments
                       </p>
-                      <CommentsThread quotationId={q._id} active={expandedId === q._id} compact />
+                      <CommentsThread quotationId={q._id} active={expandedId === q._id} compact onPosted={handleCommentPosted} />
                     </td>
                   </tr>
                 )}
@@ -668,6 +683,7 @@ export default function AdminQuotations() {
           onSend={openSendModal}
           sending={sending}
           onPrint={openPrint}
+          onCommentPosted={handleCommentPosted}
         />
       )}
     </div>

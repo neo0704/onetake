@@ -171,11 +171,13 @@ export default function FreelancerProfile() {
   if (loading) return <LoadingSpinner />;
 
   const avCfg = AVAIL_OPTIONS.find(a => a.value === (profile?.availability || 'available'));
-  // Reuses the same backend-origin env var already used for the socket
-  // connection elsewhere in the app, since /uploads is served from that
-  // same root, not from the /api-prefixed axios baseURL.
+  // New avatars are absolute Cloudinary URLs (https://res.cloudinary.com/...) and are
+  // used as-is. Only old-style relative paths like '/uploads/avatars/xxx.jpg' — saved
+  // before avatar uploads moved to Cloudinary — need the backend origin prepended.
   const API_ORIGIN = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-  const avatarSrc = profile?.avatar ? `${API_ORIGIN}${profile.avatar}` : null;
+  const avatarSrc = profile?.avatar
+    ? (/^https?:\/\//i.test(profile.avatar) ? profile.avatar : `${API_ORIGIN}${profile.avatar}`)
+    : null;
 
   return (
     <div className="space-y-5 animate-fade-in max-w-6xl">
