@@ -11,20 +11,26 @@ const AVAIL_CONFIG = {
   on_leave:    { label: 'On Leave',    cls: 'bg-gray-500/20   text-gray-400   border-gray-500/40'   },
 };
 
-// Same backend-origin env var used elsewhere for the socket connection —
-// /uploads is served from that root, not the /api-prefixed axios baseURL.
-const avatarSrc = (f) =>
-  f?.avatar ? `${import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000'}${f.avatar}` : null;
+// New avatars are absolute Cloudinary URLs (https://res.cloudinary.com/...) and are
+// used as-is. Only old-style relative paths like '/uploads/avatars/xxx.jpg' — saved
+// before avatar uploads moved to Cloudinary — need the backend origin prepended.
+const avatarSrc = (f) => {
+  if (!f?.avatar) return null;
+  if (/^https?:\/\//i.test(f.avatar)) return f.avatar;
+  return `${import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000'}${f.avatar}`;
+};
 
 function FreelancerCard({ f, onSelect }) {
   const avCfg = AVAIL_CONFIG[f.availability || 'available'];
+  const [imgError, setImgError] = useState(false);
+  const src = avatarSrc(f);
   return (
     <div className="card cursor-pointer hover:border-white/20 transition-all border border-white/10 active:scale-[0.99]"
       onClick={() => onSelect(f)}>
       <div className="flex items-start gap-3">
         <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-primary/20 flex items-center justify-center text-base sm:text-lg font-black text-primary flex-shrink-0 overflow-hidden">
-          {avatarSrc(f) ? (
-            <img src={avatarSrc(f)} alt={f.name} className="w-full h-full object-cover" />
+          {src && !imgError ? (
+            <img src={src} alt={f.name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
           ) : (
             (f.name || 'F')[0].toUpperCase()
           )}
@@ -63,10 +69,13 @@ function FreelancerCard({ f, onSelect }) {
 
 function FreelancerDetailModal({ f, onClose }) {
   const [showFullImage, setShowFullImage] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => { setImgError(false); }, [f?._id]);
 
   if (!f) return null;
   const avCfg = AVAIL_CONFIG[f.availability || 'available'];
-  const src = avatarSrc(f);
+  const src = imgError ? null : avatarSrc(f);
 
   return (
     <Modal isOpen={!!f} onClose={onClose} title="Freelancer Profile">
@@ -81,7 +90,7 @@ function FreelancerDetailModal({ f, onClose }) {
             className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary/20 flex items-center justify-center text-xl sm:text-2xl font-black text-primary flex-shrink-0 overflow-hidden ${src ? 'cursor-zoom-in hover:opacity-80 transition-opacity' : ''}`}
           >
             {src ? (
-              <img src={src} alt={f.name} className="w-full h-full object-cover" />
+              <img src={src} alt={f.name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
             ) : (
               (f.name || 'F')[0].toUpperCase()
             )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, CalendarDays, Clock,
@@ -30,11 +30,21 @@ export default function FreelancerLayout() {
   const [hoverExpanded, setHoverExpanded] = useState(false);   // temp expand on hover, only when collapsed
   const [showNotifs,    setShowNotifs]    = useState(false);
   const [showSettings,  setShowSettings]  = useState(false);
+  const [avatarError,   setAvatarError]   = useState(false);   // fall back to initials if the image 404s
+
+  // New avatars are absolute Cloudinary URLs (https://res.cloudinary.com/...) and
+  // are used as-is. Only old-style relative paths like '/uploads/avatars/xxx.jpg'
+  // need the backend origin prepended.
+  const avatarSrc = user?.avatar
+    ? (/^https?:\/\//i.test(user.avatar) ? user.avatar : `${import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000'}${user.avatar}`)
+    : null;
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  useEffect(() => { setAvatarError(false); }, [avatarSrc]);
 
   // Visually expanded = pinned open, or collapsed-but-hovered
   const expanded = !collapsed || hoverExpanded;
@@ -91,11 +101,12 @@ export default function FreelancerLayout() {
           className="px-3 py-4 border-t border-white/10">
           <div className={`flex items-center gap-3 px-3 py-2 rounded-lg ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}>
             <div className="w-8 h-8 bg-primary/30 rounded-full flex items-center justify-center text-sm font-bold text-primary flex-shrink-0 overflow-hidden">
-              {user?.avatar ? (
+              {avatarSrc && !avatarError ? (
                 <img
-                  src={`${import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000'}${user.avatar}`}
+                  src={avatarSrc}
                   alt={user?.name}
                   className="w-full h-full object-cover"
+                  onError={() => setAvatarError(true)}
                 />
               ) : (
                 user?.name?.[0]?.toUpperCase() || 'F'
