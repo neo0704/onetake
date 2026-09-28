@@ -246,10 +246,13 @@ export default function AdminQuotationCreate() {
   const minValidUntil = toInputDate(new Date());
 
   const [sendTarget, setSendTarget] = useState(null);
+  const submittingRef = useRef(false);
 
   const handleSubmit = async (action) => {
     if (selected.length === 0 && extras.length === 0) { toast.error('Select a package'); return; }
     if (selected.filter(p => !ADDITIONAL_IDS.has(p.id)).length > 1) { toast.error('Only one main package can be selected (additional services are unlimited)'); return; }
+    if (submittingRef.current) return; // ignore double clicks
+    submittingRef.current = true;
     setSaving(true);
     try {
       const { data } = await api.post('/quotations', {
@@ -265,7 +268,7 @@ export default function AdminQuotationCreate() {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error');
-    } finally { setSaving(false); }
+    } finally { setSaving(false); submittingRef.current = false; }
   };
 
   if (loading) return <LoadingSpinner />;

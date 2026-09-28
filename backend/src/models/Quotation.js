@@ -64,12 +64,48 @@ const quotationSchema = new mongoose.Schema({
   quotationPdfUrl:   { type: String, default: '' }
 }, { timestamps: true });
 
-quotationSchema.pre('save', async function(next) {
-  if (!this.quotationNumber) {
-    const count = await mongoose.model('Quotation').countDocuments();
-    this.quotationNumber = `QT-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+// ── Atomic quotation numbering ───────────────────────────────────────────────
+// A counter document per year is incremented atomically, so numbers stay unique even
+// when quotations are deleted or two are created at the same moment.
+// (The old approach — countDocuments() + 1 — reused numbers after any deletion.)
+const counterSchema = new mongoose.Schema({ _id: String, seq: { type: Number, default: 0 } });
+const Counter = mongoose.models.Counter || mongoose.model('Counter', counterSchema);
+
+async function nextQuotationNumber() {
+  const year = new Date().getFullYear();
+  const key  = `quotation-${year}`;
+
+  // Make sure the counter is never behind the highest number already in the database
+  // (this also seeds it correctly the first time this code runs on existing data).
+  const latest = await mongoose.model('Quotation')
+    .findOne({ quotationNumber: new RegExp(`^QT-${year}-`) })
+    .sort({ quotationNumber: -1 })
+    .select('quotationNumber')
+    .lean();
+  const floor = latest ? parseInt(latest.quotationNumber.split('-')[2], 10) || 0 : 0;
+
+  const bump = async () => {
+    await Counter.findOneAndUpdate({ _id: key }, { $max: { seq: floor } }, { upsert: true });
+    return Counter.findOneAndUpdate({ _id: key }, { $inc: { seq: 1 } }, { new: true });
+  };
+
+  let counter;
+  try {
+    counter = await bump();
+  } catch (err) {
+    if (err.code === 11000) counter = await bump(); // two first-time requests raced on the upsert
+    else throw err;
   }
-  next();
+  return `QT-${year}-${String(counter.seq).padStart(4, '0')}`;
+}
+
+quotationSchema.pre('save', async function (next) {
+  try {
+    if (!this.quotationNumber) this.quotationNumber = await nextQuotationNumber();
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = mongoose.model('Quotation', quotationSchema);
