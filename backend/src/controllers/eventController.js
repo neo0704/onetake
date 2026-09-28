@@ -347,6 +347,11 @@ exports.updateNeedsAssessment = async (req, res) => {
       needsAssessmentNotes,
     } = req.body;
 
+    // One package per assessment.
+    if (selectedPackages !== undefined && (!Array.isArray(selectedPackages) || selectedPackages.length > 1)) {
+      return res.status(400).json({ success: false, message: 'Only one package can be selected per assessment' });
+    }
+
     const event = await Event.findByIdAndUpdate(req.params.id, {
       attendees,
       videoType,
