@@ -23,6 +23,19 @@ const dayRange = (dateInput) => {
   return { start, end };
 };
 
+// Is a needs-assessment meeting already confirmed on this date + time?
+// excludeEventId lets an admin reschedule an event without clashing with itself.
+const meetingSlotTaken = async (date, time, excludeEventId) => {
+  const { start, end } = dayRange(date);
+  return Event.exists({
+    ...(excludeEventId && { _id: { $ne: excludeEventId } }),
+    status: { $ne: 'cancelled' },
+    'scheduledMeeting.status': 'confirmed',
+    'scheduledMeeting.confirmedDate': { $gte: start, $lt: end },
+    'scheduledMeeting.confirmedTime': time,
+  });
+};
+
 // Helper: append a timeline entry directly via $push (works even with lean updates)
 const pushTimeline = async (eventId, status, user, note = '') => {
   const LABELS = {
@@ -68,6 +81,7 @@ exports.createInquiry = async (req, res) => {
       eventDate,
       eventCategory,
       location,
+      attendees,
       services,
       specialRequests,
       meetingPreference,
@@ -91,7 +105,22 @@ exports.createInquiry = async (req, res) => {
     if (conflict) {
       return res.status(409).json({
         success: false,
+        code: 'DATE_BOOKED',
         message: 'This date is already booked for another event. Please choose a different date.',
+      });
+    }
+
+    // Same idea for the preferred meeting slot: it's only a preference, but if
+    // a confirmed meeting already holds that exact date + time, refuse it now
+    // rather than making the admin untangle it later.
+    if (
+      meetingPreference?.preferredDate && meetingPreference?.preferredTime &&
+      await meetingSlotTaken(meetingPreference.preferredDate, meetingPreference.preferredTime)
+    ) {
+      return res.status(409).json({
+        success: false,
+        code: 'MEETING_SLOT_TAKEN',
+        message: 'That meeting time was just taken. Please pick another slot.',
       });
     }
 
@@ -100,6 +129,7 @@ exports.createInquiry = async (req, res) => {
       eventDate,
       eventCategory,
       location,
+      attendees,
       services,
       specialRequests,
       meetingPreference,
@@ -192,6 +222,36 @@ exports.getBookedDates = async (req, res) => {
     )];
 
     res.json({ success: true, dates });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ── Booked meeting slots: { 'YYYY-MM-DD': ['9:00 AM', ...] } ─────────────────
+// Times only, no client details — safe for any authenticated user.
+exports.getBookedMeetingSlots = async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const { start } = dayRange(new Date());
+    // ?exclude=<eventId> — so an admin rescheduling an event doesn't see that
+    // event's own current slot as "taken"
+    const { exclude } = req.query;
+    const events = await Event.find({
+      ...(exclude && mongoose.Types.ObjectId.isValid(exclude) && { _id: { $ne: exclude } }),
+      status: { $ne: 'cancelled' },
+      'scheduledMeeting.status': 'confirmed',
+      'scheduledMeeting.confirmedDate': { $gte: start },
+    }, 'scheduledMeeting.confirmedDate scheduledMeeting.confirmedTime -_id').lean();
+
+    const slots = {};
+    for (const e of events) {
+      const { confirmedDate, confirmedTime } = e.scheduledMeeting || {};
+      if (!confirmedDate || !confirmedTime) continue;
+      const day = new Date(confirmedDate).toISOString().slice(0, 10);
+      (slots[day] ||= []).push(confirmedTime);
+    }
+
+    res.json({ success: true, slots });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -406,6 +466,31 @@ exports.updateStatus = async (req, res) => {
       const approvedQ = await Quotation.findOne({ event: req.params.id, status: 'approved' });
       if (!approvedQ) {
         return res.status(400).json({ success: false, message: 'The client must approve a quotation first.' });
+      }
+    }
+
+    // ── Double-booking guard at ACCEPT time ─────────────────────────────────
+    // Two clients can submit inquiries for the same date at the same moment (neither
+    // blocks the other while both are only "inquiry_received"). So the date is
+    // re-checked when an event ENTERS a booked status — the second acceptance is refused.
+    if (BOOKED_STATUSES.includes(status)) {
+      const current = await Event.findById(req.params.id).select('status eventDate');
+      if (!current) return res.status(404).json({ success: false, message: 'Event not found' });
+
+      if (!BOOKED_STATUSES.includes(current.status)) {
+        const { start, end } = dayRange(current.eventDate);
+        const conflict = await Event.findOne({
+          _id: { $ne: current._id },
+          eventDate: { $gte: start, $lt: end },
+          status: { $in: BOOKED_STATUSES },
+        }).select('eventName');
+
+        if (conflict) {
+          return res.status(409).json({
+            success: false,
+            message: `Another event ("${conflict.eventName}") is already booked on this date. Decline this inquiry or ask the client to pick a different date.`,
+          });
+        }
       }
     }
 
@@ -1224,6 +1309,14 @@ exports.toggleFeedbackFeatured = async (req, res) => {
 exports.scheduleMeeting = async (req, res) => {
   try {
     const { meetingType, confirmedDate, confirmedTime, location, notes } = req.body;
+
+    if (await meetingSlotTaken(confirmedDate, confirmedTime, req.params.id)) {
+      return res.status(409).json({
+        success: false,
+        code: 'MEETING_SLOT_TAKEN',
+        message: `Another meeting is already confirmed on that date at ${confirmedTime}. Please choose a different time.`,
+      });
+    }
 
     const event = await Event.findByIdAndUpdate(req.params.id, {
       status: 'meeting_scheduled',

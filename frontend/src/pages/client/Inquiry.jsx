@@ -49,9 +49,16 @@ const MEETING_OPTIONS = [
   },
 ];
 
+// Keep in sync with the time values the admin scheduling UI saves as
+// scheduledMeeting.confirmedTime — the server compares these as exact strings.
+const TIME_SLOTS = [
+  '8:00 AM','9:00 AM','10:00 AM','11:00 AM',
+  '1:00 PM','2:00 PM','3:00 PM','4:00 PM',
+];
+
 // Central validation so inline field errors, the summary progress, and the
 // submit-time toast all agree on what "complete" means.
-function getFormErrors(form, bookedDates) {
+function getFormErrors(form, bookedDates, meetingSlots = {}) {
   const errors = {};
   if (!form.eventName.trim())      errors.eventName = 'Please enter an event name';
   if (!form.eventDate)             errors.eventDate = 'Please select an event date';
@@ -65,6 +72,10 @@ function getFormErrors(form, bookedDates) {
   if (!form.location.trim())       errors.location = 'Please enter a venue or location';
   if (!form.selectedService)       errors.selectedService = 'Please select a service';
   if (!form.meetingType)           errors.meetingType = 'Please select your preferred meeting type';
+  if (form.preferredDate && form.preferredTime &&
+      meetingSlots[form.preferredDate]?.includes(form.preferredTime)) {
+    errors.preferredTime = 'That time slot is already taken. Please choose another.';
+  }
   return errors;
 }
 
@@ -265,6 +276,7 @@ export default function ClientInquiry() {
   const [touched, setTouched] = useState({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [bookedDates, setBookedDates] = useState(new Set());
+  const [meetingSlots, setMeetingSlots] = useState({}); // { 'YYYY-MM-DD': ['9:00 AM', ...] }
   const [showConfirm, setShowConfirm] = useState(false);
   const [form, setForm] = useState({
     eventName:          '',
@@ -296,14 +308,38 @@ export default function ClientInquiry() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get('/events/booked-meeting-slots');
+        if (!cancelled) setMeetingSlots(data.slots || {});
+      } catch {
+        // Non-fatal — the server still re-validates on submit either way
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Dates where every time slot is already taken get blocked in the calendar
+  const fullyBookedMeetingDates = useMemo(() => {
+    const set = new Set();
+    Object.entries(meetingSlots).forEach(([date, times]) => {
+      if (TIME_SLOTS.every(t => times.includes(t))) set.add(date);
+    });
+    return set;
+  }, [meetingSlots]);
+
+  const takenTimes = meetingSlots[form.preferredDate] || [];
+
   const requiredFields = useMemo(() => {
     const base = ['eventName', 'eventDate', 'eventCategory', 'location', 'selectedService', 'meetingType'];
     if (form.eventCategory === 'Others') base.push('eventCategoryOther');
     return base;
   }, [form.eventCategory]);
 
-  const errors = useMemo(() => getFormErrors(form, bookedDates), [form, bookedDates]);
-  const completedCount = requiredFields.length - Object.keys(errors).length;
+  const errors = useMemo(() => getFormErrors(form, bookedDates, meetingSlots), [form, bookedDates, meetingSlots]);
+  const completedCount = requiredFields.filter(f => !errors[f]).length;
 
   const markTouched = (field) => () => setTouched(t => ({ ...t, [field]: true }));
   const showError = (field) => (touched[field] || attemptedSubmit) && errors[field];
@@ -314,7 +350,7 @@ export default function ClientInquiry() {
     e.preventDefault();
     setAttemptedSubmit(true);
 
-    const currentErrors = getFormErrors(form, bookedDates);
+    const currentErrors = getFormErrors(form, bookedDates, meetingSlots);
     if (Object.keys(currentErrors).length > 0) {
       toast.error(Object.values(currentErrors)[0]);
       return;
@@ -362,9 +398,18 @@ export default function ClientInquiry() {
       navigate('/client/events');
     } catch (err) {
       if (err.response?.status === 409) {
-        // Someone else booked this date between page-load and submit — refresh
-        // the booked-dates list so the calendar reflects reality immediately.
-        setBookedDates(prev => new Set(prev).add(form.eventDate));
+        if (err.response.data?.code === 'MEETING_SLOT_TAKEN') {
+          // Someone confirmed this meeting slot between page-load and submit
+          setMeetingSlots(prev => ({
+            ...prev,
+            [form.preferredDate]: [...(prev[form.preferredDate] || []), form.preferredTime],
+          }));
+          setForm(f => ({ ...f, preferredTime: '' }));
+        } else {
+          // Someone else booked this event date between page-load and submit —
+          // refresh the booked-dates list so the calendar reflects reality.
+          setBookedDates(prev => new Set(prev).add(form.eventDate));
+        }
         setAttemptedSubmit(true);
         setShowConfirm(false);
       }
@@ -426,9 +471,11 @@ export default function ClientInquiry() {
                       setForm(f => ({
                         ...f,
                         eventDate: newEventDate,
-                        // Clear preferred meeting date if it's no longer at
-                        // least 3 days before the new event date
-                        preferredDate: f.preferredDate && f.preferredDate > daysBefore(newEventDate, 3) ? '' : f.preferredDate,
+                        // Clear preferred meeting date (and its time) if it's no
+                        // longer at least 3 days before the new event date
+                        ...(f.preferredDate && f.preferredDate > daysBefore(newEventDate, 3)
+                          ? { preferredDate: '', preferredTime: '' }
+                          : {}),
                       }));
                       setTouched(t => ({ ...t, eventDate: true }));
                     }}
@@ -648,9 +695,15 @@ export default function ClientInquiry() {
                         <>
                           <DatePickerField
                             value={form.preferredDate}
-                            onChange={(d) => setForm(f => ({ ...f, preferredDate: d }))}
+                            onChange={(d) => setForm(f => ({
+                              ...f,
+                              preferredDate: d,
+                              // drop the chosen time if it's taken on the newly picked date
+                              preferredTime: (meetingSlots[d] || []).includes(f.preferredTime) ? '' : f.preferredTime,
+                            }))}
                             minDate={today}
                             maxDate={latestAllowed || undefined}
+                            bookedDates={fullyBookedMeetingDates}
                             disabled={!form.eventDate}
                             placeholder="Select a date"
                           />
@@ -666,18 +719,26 @@ export default function ClientInquiry() {
                     <label className="label">Preferred Time</label>
                     <div className="relative">
                       <select
-                        className="input appearance-none pr-9"
+                        className={`input appearance-none pr-9 ${!form.preferredDate ? 'opacity-40 cursor-not-allowed' : ''} ${errorInputClass('preferredTime')}`}
                         value={form.preferredTime}
                         onChange={e => setForm(f => ({ ...f, preferredTime: e.target.value }))}
+                        disabled={!form.preferredDate}
                       >
-                        <option value="">Select time...</option>
-                        {[
-                          '8:00 AM','9:00 AM','10:00 AM','11:00 AM',
-                          '1:00 PM','2:00 PM','3:00 PM','4:00 PM',
-                        ].map(t => <option key={t} value={t}>{t}</option>)}
+                        <option value="">
+                          {form.preferredDate ? 'Select time...' : 'Pick a date first'}
+                        </option>
+                        {TIME_SLOTS.map(t => {
+                          const taken = takenTimes.includes(t);
+                          return (
+                            <option key={t} value={t} disabled={taken}>
+                              {t}{taken ? ' — unavailable' : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                       <ChevronDown className="w-4 h-4 text-white/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
+                    <FieldError message={showError('preferredTime')} />
                   </div>
                 </div>
               </div>

@@ -36,6 +36,7 @@ const messageUpload = multer({
 
 router.get('/dashboard', protect, authorize('admin'), ctrl.getDashboardStats);
 router.get('/booked-dates', protect, ctrl.getBookedDates);
+router.get('/booked-meeting-slots', protect, ctrl.getBookedMeetingSlots);
 router.post('/', protect, ctrl.createInquiry);
 router.get('/', protect, ctrl.getEvents);
 router.get('/:id', protect, ctrl.getEvent);

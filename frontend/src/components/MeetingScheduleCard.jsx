@@ -162,11 +162,27 @@ export default function MeetingScheduleCard({ event, onUpdate }) {
   const maxDate = event.eventDate ? new Date(event.eventDate).toISOString().slice(0, 10) : '';
   const isFtf   = form.meetingType === 'ftf';
 
+  // ── Slots already held by other confirmed meetings: { 'YYYY-MM-DD': ['9:00 AM', ...] }
+  // The server excludes THIS event, so rescheduling never clashes with itself.
+  const [meetingSlots, setMeetingSlots] = useState({});
+  const loadSlots = async () => {
+    try {
+      const { data } = await api.get('/events/booked-meeting-slots', { params: { exclude: event._id } });
+      setMeetingSlots(data.slots || {});
+    } catch {
+      // Non-fatal — the server still re-validates when saving
+    }
+  };
+  useEffect(() => { loadSlots(); }, [event._id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const takenTimes = meetingSlots[form.confirmedDate] || [];
+  const slotTaken  = !!form.confirmedTime && takenTimes.includes(form.confirmedTime);
+
   // ── Create in-system meeting (online) ──────────────────────────────────────
 // ── Create in-system meeting (online) ──────────────────────────────────────
 const createInSystemMeeting = async () => {
   const time24 = TIME_MAP[form.confirmedTime] || '09:00';
-  const scheduledAt = `${form.confirmedDate}T${time24}:00`;
+  const scheduledAt = new Date(`${form.confirmedDate}T${time24}:00`).toISOString();
 
   // event.client is populated as a full user object on the admin's event
   // fetch, but may come through as a bare ObjectId string in some places —
@@ -199,6 +215,7 @@ const createInSystemMeeting = async () => {
   const saveSchedule = async () => {
     if (!form.confirmedDate) { toast.error('Please set a meeting date'); return; }
     if (!form.confirmedTime) { toast.error('Please set a meeting time'); return; }
+    if (slotTaken) { toast.error('That time slot already has a confirmed meeting. Please choose another.'); return; }
     if (isFtf && !form.location.trim()) { toast.error('Please enter the meeting location'); return; }
 
     setSaving(true);
@@ -228,6 +245,11 @@ const createInSystemMeeting = async () => {
       onUpdate?.();
     } catch (err) {
       console.error('[saveSchedule]', err.response?.data || err.message);
+      if (err.response?.status === 409 && err.response.data?.code === 'MEETING_SLOT_TAKEN') {
+        // Someone else grabbed it first — refresh so the dropdown reflects reality
+        loadSlots();
+        setForm(f => ({ ...f, confirmedTime: '' }));
+      }
       toast.error(err.response?.data?.message || 'Failed to schedule meeting');
     } finally {
       setSaving(false);
@@ -374,7 +396,12 @@ const createInSystemMeeting = async () => {
               <label className="label">Confirmed Date</label>
               <DatePickerField
                 value={form.confirmedDate}
-                onChange={(d) => setForm(f => ({ ...f, confirmedDate: d }))}
+                onChange={(d) => setForm(f => ({
+                  ...f,
+                  confirmedDate: d,
+                  // drop the chosen time if it's taken on the newly picked date
+                  confirmedTime: (meetingSlots[d] || []).includes(f.confirmedTime) ? '' : f.confirmedTime,
+                }))}
                 minDate={today}
                 maxDate={maxDate || undefined}
               />
@@ -382,11 +409,25 @@ const createInSystemMeeting = async () => {
             </div>
             <div>
               <label className="label">Confirmed Time</label>
-              <select className="input" value={form.confirmedTime}
+              <select className={`input ${slotTaken ? 'border-red-500/60 focus:border-red-500' : ''}`}
+                value={form.confirmedTime}
                 onChange={e => setForm(f => ({ ...f, confirmedTime: e.target.value }))}>
                 <option value="">Select time...</option>
-                {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                {TIME_SLOTS.map(t => {
+                  const taken = takenTimes.includes(t);
+                  return (
+                    <option key={t} value={t} disabled={taken}>
+                      {t}{taken ? ' — already booked' : ''}
+                    </option>
+                  );
+                })}
               </select>
+              {slotTaken && (
+                <p className="flex items-center gap-1 text-red-400 text-xs mt-1.5">
+                  <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                  Another meeting is already confirmed at this time. Please pick a different slot.
+                </p>
+              )}
             </div>
           </div>
 
