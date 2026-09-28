@@ -79,7 +79,10 @@ export default function QuotationPrintView() {
   useEffect(() => {
     // ── Read from sessionStorage — NO API call, NO timeout possible ──────────
     try {
-      const stored = sessionStorage.getItem(`qprint_${id}`);
+      const key = `qprint_${id}`;
+      const read = (store) => { try { return store.getItem(key); } catch { return null; } };
+      // sessionStorage isn't shared with new tabs in some browsers; the Quotations page also saves to localStorage.
+      const stored = read(sessionStorage) || read(localStorage);
       if (stored) {
         setQ(JSON.parse(stored));
       } else {
@@ -149,9 +152,18 @@ export default function QuotationPrintView() {
             <div className="pt">TOTAL: {fm(tot)}{q.tax>0?' (+VAT)':''}</div>
             {(q.services||[]).length>0&&<>
               <div className="sh">Services:</div>
-              {q.services.map((s,i)=>(
+              {q.services.map((s,i)=>{
+                // Packages carry a bullet-list description; custom items don't.
+                // Show the price only on custom items (the package price is covered by the total).
+                const isPackage = (s.description||'').trim().startsWith('•');
+                const price = Number(s.total ?? s.unitPrice);
+                const showPrice = !isPackage && price > 0;
+                return (
                 <div key={i}>
-                  <div className="si">{s.name}</div>
+                  <div className="si" style={showPrice ? {display:'flex',justifyContent:'space-between',gap:'12px'} : undefined}>
+                    <span>{s.name}</span>
+                    {showPrice && <span style={{fontWeight:700}}>{fm(price)}</span>}
+                  </div>
                   {s.description&&s.description.split('\n').map((l,li)=>{
                     const t=l.trim(); if(!t)return null;
                     if(t.startsWith('•')||t.startsWith('✔')) return <div key={li} className="ii">{t.replace(/^[•✔]\s*/,'')}</div>;
@@ -159,7 +171,8 @@ export default function QuotationPrintView() {
                     return null;
                   })}
                 </div>
-              ))}
+                );
+              })}
             </>}
             {(q.equipment||[]).length>0&&<>
               <div className="sh">Technical Setup:</div>
@@ -181,12 +194,12 @@ export default function QuotationPrintView() {
           <tr className="dr"><td>50% Balance — on the day of the event</td><td className="vl">{fm(bal)}</td></tr>
         </tbody></table>
 
-        {/* Payment */}
-        <div className="bx">
-         
-          <p>{CO.bank}</p><p>{CO.name}</p><p>{CO.bankAccount}</p>
-          {q.validUntil&&<p style={{marginTop:'6px',fontStyle:'italic',color:'#c00'}}><strong>Quotation valid until: {fd(q.validUntil)}</strong></p>}
-        </div>
+        {/* Validity */}
+        {q.validUntil && (
+          <div className="bx">
+            <p style={{fontStyle:'italic',color:'#c00'}}><strong>Quotation valid until: {fd(q.validUntil)}</strong></p>
+          </div>
+        )}
 
         {/* Confidentiality */}
         <div className="cf">

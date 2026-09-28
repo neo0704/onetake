@@ -185,7 +185,8 @@ export default function AdminQuotationCreate() {
           const preSelected = (na.selectedPackages || [])
             .map(id => PACKAGE_MAP[id])
             .filter(Boolean);
-          setSelected(preSelected);
+          if (preSelected.length === 1) setSelected(preSelected);
+          // If the assessment has several, don't guess — the admin picks one.
         }
         if (na?.customItems?.length) {
           setExtras((na.customItems || []).map(ci => ({
@@ -203,10 +204,10 @@ export default function AdminQuotationCreate() {
       .catch(() => setLoading(false));
   }, [eventId]);
 
+  // Only ONE package per quotation: picking another replaces the current one,
+  // clicking the selected one again clears it.
   const togglePackage = (pkg) => setSelected(prev =>
-    prev.find(p => p.id === pkg.id)
-      ? prev.filter(p => p.id !== pkg.id)
-      : [...prev, { ...pkg }]
+    prev.find(p => p.id === pkg.id) ? [] : [{ ...pkg }]
   );
   const isSelected = (id) => !!selected.find(p => p.id === id);
 
@@ -240,7 +241,8 @@ export default function AdminQuotationCreate() {
   const [sendTarget, setSendTarget] = useState(null);
 
   const handleSubmit = async (action) => {
-    if (selected.length === 0 && extras.length === 0) { toast.error('Select at least one package'); return; }
+    if (selected.length === 0 && extras.length === 0) { toast.error('Select a package'); return; }
+    if (selected.length > 1) { toast.error('Only one package can be selected per quotation'); return; }
     setSaving(true);
     try {
       const { data } = await api.post('/quotations', {
@@ -312,8 +314,9 @@ export default function AdminQuotationCreate() {
                   Auto-populated from needs assessment
                 </p>
                 <p className="text-green-400/70 text-xs mt-0.5">
-                  {event.needsAssessment.selectedPackages.length} package{event.needsAssessment.selectedPackages.length !== 1 ? 's' : ''} from the client meeting have been pre-selected below.
-                  Review and adjust if needed before sending.
+                  {event.needsAssessment.selectedPackages.length === 1
+                    ? 'The package from the client meeting has been pre-selected below. Review and adjust if needed before sending.'
+                    : `The client meeting listed ${event.needsAssessment.selectedPackages.length} packages, but a quotation can only have one. Please choose one below.`}
                 </p>
                 {event.needsAssessment.attendees && (
                   <p className="text-white/50 text-xs mt-1.5">
@@ -333,7 +336,7 @@ export default function AdminQuotationCreate() {
         {/* Package selection */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="section-title">Select Service Packages</h2>
+            <h2 className="section-title">Select a Service Package</h2>
             {selected.length > 0 && <span className="badge bg-primary/20 text-primary">{selected.length} selected</span>}
           </div>
           {RATE_CARD.map((group, gi) => (
