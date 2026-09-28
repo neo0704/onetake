@@ -153,6 +153,11 @@ function SendQuotationModal({ quotation: q, onClose, onSent }) {
   );
 }
 
+// Packages in the "Additional Services" group are add-ons, not main packages.
+const ADDITIONAL_IDS = new Set(
+  RATE_CARD.filter(g => /additional/i.test(g.group)).flatMap(g => g.packages.map(p => p.id))
+);
+
 export default function AdminQuotationCreate() {
   const { eventId } = useParams();
   const navigate    = useNavigate();
@@ -185,8 +190,9 @@ export default function AdminQuotationCreate() {
           const preSelected = (na.selectedPackages || [])
             .map(id => PACKAGE_MAP[id])
             .filter(Boolean);
-          if (preSelected.length === 1) setSelected(preSelected);
-          // If the assessment has several, don't guess — the admin picks one.
+          const mains = preSelected.filter(p => !ADDITIONAL_IDS.has(p.id));
+          // Several main packages: don't guess — keep only the additional services and let the admin pick one.
+          setSelected(mains.length <= 1 ? preSelected : preSelected.filter(p => ADDITIONAL_IDS.has(p.id)));
         }
         if (na?.customItems?.length) {
           setExtras((na.customItems || []).map(ci => ({
@@ -204,11 +210,12 @@ export default function AdminQuotationCreate() {
       .catch(() => setLoading(false));
   }, [eventId]);
 
-  // Only ONE package per quotation: picking another replaces the current one,
-  // clicking the selected one again clears it.
-  const togglePackage = (pkg) => setSelected(prev =>
-    prev.find(p => p.id === pkg.id) ? [] : [{ ...pkg }]
-  );
+  // ONE main package (picking another replaces it) + any number of additional services.
+  const togglePackage = (pkg) => setSelected(prev => {
+    if (prev.find(p => p.id === pkg.id)) return prev.filter(p => p.id !== pkg.id);
+    if (ADDITIONAL_IDS.has(pkg.id)) return [...prev, { ...pkg }];
+    return [{ ...pkg }, ...prev.filter(p => ADDITIONAL_IDS.has(p.id))];
+  });
   const isSelected = (id) => !!selected.find(p => p.id === id);
 
   const buildServices = () => selected.map(pkg => ({
@@ -242,7 +249,7 @@ export default function AdminQuotationCreate() {
 
   const handleSubmit = async (action) => {
     if (selected.length === 0 && extras.length === 0) { toast.error('Select a package'); return; }
-    if (selected.length > 1) { toast.error('Only one package can be selected per quotation'); return; }
+    if (selected.filter(p => !ADDITIONAL_IDS.has(p.id)).length > 1) { toast.error('Only one main package can be selected (additional services are unlimited)'); return; }
     setSaving(true);
     try {
       const { data } = await api.post('/quotations', {
@@ -314,9 +321,9 @@ export default function AdminQuotationCreate() {
                   Auto-populated from needs assessment
                 </p>
                 <p className="text-green-400/70 text-xs mt-0.5">
-                  {event.needsAssessment.selectedPackages.length === 1
-                    ? 'The package from the client meeting has been pre-selected below. Review and adjust if needed before sending.'
-                    : `The client meeting listed ${event.needsAssessment.selectedPackages.length} packages, but a quotation can only have one. Please choose one below.`}
+                  {(event.needsAssessment.selectedPackages || []).filter(id => !ADDITIONAL_IDS.has(id)).length > 1
+                    ? 'The client meeting listed several main packages, but a quotation can only have one. Please choose one below (additional services were kept).'
+                    : 'The package and additional services from the client meeting have been pre-selected below. Review and adjust if needed before sending.'}
                 </p>
                 {event.needsAssessment.attendees && (
                   <p className="text-white/50 text-xs mt-1.5">
@@ -336,7 +343,7 @@ export default function AdminQuotationCreate() {
         {/* Package selection */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="section-title">Select a Service Package</h2>
+            <h2 className="section-title">Select Service Package &amp; Additional Services</h2>
             {selected.length > 0 && <span className="badge bg-primary/20 text-primary">{selected.length} selected</span>}
           </div>
           {RATE_CARD.map((group, gi) => (

@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, CheckCircle, Users, FileText } from 'lucide-react';
 import { RATE_CARD, SERVICE_LABELS } from '../utils/rateCard';
 
+// Packages in the "Additional Services" group are add-ons, not main packages.
+// A main package is limited to one; additional services are unlimited.
+const ADDITIONAL_IDS = new Set(
+  RATE_CARD.filter(g => /additional/i.test(g.group)).flatMap(g => g.packages.map(p => p.id))
+);
+
 export default function AssessmentTab({ event, saving, onSave }) {
   const [oldMultiCount, setOldMultiCount] = useState(0);
   const [form, setForm] = useState({
@@ -19,14 +25,15 @@ export default function AssessmentTab({ event, saving, onSave }) {
       const na = event.needsAssessment;
       // Older assessments may have saved several packages. Only one is allowed now,
       // so start empty and make the admin pick one instead of guessing.
-      const savedPkgs = na.selectedPackages || [];
-      setOldMultiCount(savedPkgs.length > 1 ? savedPkgs.length : 0);
+      const savedPkgs  = na.selectedPackages || [];
+      const savedMains = savedPkgs.filter(id => !ADDITIONAL_IDS.has(id));
+      setOldMultiCount(savedMains.length > 1 ? savedMains.length : 0);
       setForm({
         attendees:        na.attendees       || event.attendees || '',
         videoType:        na.videoType       || event.videoType || '',
         specialRequests:  na.specialRequests || event.specialRequests || '',
         notes:            na.notes           || '',
-        selectedPackages: savedPkgs.length === 1 ? savedPkgs : [],
+        selectedPackages: savedMains.length > 1 ? savedPkgs.filter(id => ADDITIONAL_IDS.has(id)) : savedPkgs,
         customItems:      na.customItems     || [],
       });
     } else {
@@ -38,14 +45,15 @@ export default function AssessmentTab({ event, saving, onSave }) {
     }
   }, [event?._id]);
 
-  // Only ONE package per assessment: picking another replaces the current one,
-  // clicking the selected one again clears it.
+  // ONE main package (picking another replaces it) + any number of additional services.
   const togglePackage = (pkgId) => {
-    setOldMultiCount(0);
-    setForm(f => ({
-      ...f,
-      selectedPackages: f.selectedPackages.includes(pkgId) ? [] : [pkgId],
-    }));
+    if (!ADDITIONAL_IDS.has(pkgId)) setOldMultiCount(0);
+    setForm(f => {
+      const cur = f.selectedPackages;
+      if (cur.includes(pkgId)) return { ...f, selectedPackages: cur.filter(id => id !== pkgId) };
+      if (ADDITIONAL_IDS.has(pkgId)) return { ...f, selectedPackages: [...cur, pkgId] };
+      return { ...f, selectedPackages: [pkgId, ...cur.filter(id => ADDITIONAL_IDS.has(id))] };
+    });
   };
 
   const addCustomItem = () => setForm(f => ({
@@ -66,7 +74,7 @@ export default function AssessmentTab({ event, saving, onSave }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (form.selectedPackages.length > 1) return; // safety net; UI only allows one
+    if (form.selectedPackages.filter(id => !ADDITIONAL_IDS.has(id)).length > 1) return; // safety net
     onSave(form);
   };
 
@@ -124,9 +132,9 @@ export default function AssessmentTab({ event, saving, onSave }) {
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="section-title">Package Agreed in Meeting</h3>
+            <h3 className="section-title">Package &amp; Additional Services Agreed in Meeting</h3>
             <p className="text-white/40 text-xs mt-0.5">
-              Select the one package confirmed with the client — it will auto-fill the quotation
+              Choose one main package, then add any additional services — they will auto-fill the quotation
             </p>
           </div>
           {form.selectedPackages.length > 0 && (
@@ -136,7 +144,7 @@ export default function AssessmentTab({ event, saving, onSave }) {
         {oldMultiCount > 1 && (
           <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
             <p className="text-yellow-400 text-xs">
-              This assessment previously had {oldMultiCount} packages, but only one is allowed now. Please choose one below.
+              This assessment previously had {oldMultiCount} main packages, but only one is allowed now. Please choose one below (additional services are kept).
             </p>
           </div>
         )}
@@ -221,8 +229,8 @@ export default function AssessmentTab({ event, saving, onSave }) {
         <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl flex items-start gap-2">
           <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
           <p className="text-green-400 text-sm">
-            <span className="font-semibold">1 package selected.</span>
-            {' '}When you create the quotation, it will be automatically loaded — no need to re-select it.
+            <span className="font-semibold">{form.selectedPackages.length} item{form.selectedPackages.length !== 1 ? 's' : ''} selected.</span>
+            {' '}When you create the quotation, they will be automatically loaded — no need to re-select them.
           </p>
         </div>
       )}
