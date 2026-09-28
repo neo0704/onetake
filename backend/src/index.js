@@ -15,6 +15,11 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+// Needed for correct client IPs (rate limiting) when deployed behind a proxy/load balancer.
+// Set TRUST_PROXY=1 in production env if you're behind one proxy (Render, Railway, Nginx...).
+// Leave unset when running locally or with no proxy, otherwise IPs can be spoofed.
+app.set('trust proxy', process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) : false);
 const server = http.createServer(app);
 
 // Initialize Socket.io

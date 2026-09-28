@@ -220,46 +220,53 @@ exports.resetPassword = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // Force plain strings — blocks NoSQL injection such as { "email": { "$ne": null } }
+    const email = typeof req.body.email === 'string' ? req.body.email.toLowerCase().trim() : '';
+    const password = typeof req.body.password === 'string' ? req.body.password : '';
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
+    }
+
     const user = await User.findOne({ email }).select('+password');
 
     // No such account — same generic message as a wrong password, so this
-    // can't be used to enumerate which emails are registered.
+    // can't be used to enumerate which emails are registered. The route-level
+    // limiter still counts these attempts (IP + email).
     if (!user) {
       return res.status(401).json({ success: false, message: 'Incorrect email or password' });
     }
 
-    // Already locked out from too many recent failed attempts — block before
-    // even checking the password, and don't consume another attempt.
+    // Already locked — block before checking the password. Same 429 shape as the
+    // route limiter so the frontend handles both identically.
     if (user.lockUntil && user.lockUntil > new Date()) {
-      const minutesLeft = Math.ceil((user.lockUntil - new Date()) / 60000);
-      return res.status(423).json({
+      const secondsLeft = Math.ceil((user.lockUntil - new Date()) / 1000);
+      const minutesLeft = Math.ceil(secondsLeft / 60);
+      return res.status(429).json({
         success: false,
         locked: true,
+        retryAfter: secondsLeft,
         message: `Too many failed attempts. Try again in ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}.`,
       });
     }
 
-    const passwordMatches = await user.comparePassword(password);
+    // Google-only accounts have no password — treat as a normal failed attempt.
+    const passwordMatches = user.password ? await user.comparePassword(password) : false;
     if (!passwordMatches) {
       user.loginAttempts = (user.loginAttempts || 0) + 1;
 
-      let message = 'Incorrect email or password';
       if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
         user.lockUntil = new Date(Date.now() + LOCK_TIME_MS);
         user.loginAttempts = 0; // fresh count once the lock expires
-        message = `Too many failed attempts. Your account is locked for ${LOCK_TIME_MS / 60000} minutes.`;
         await user.save({ validateModifiedOnly: true });
         logAuditEvent(user._id, 'account_locked', req);
         sendAccountLockedAlert(user, LOCK_TIME_MS / 60000).catch(e => console.error('Lockout email error:', e.message));
-        return res.status(401).json({ success: false, message });
       } else {
-        const remaining = MAX_LOGIN_ATTEMPTS - user.loginAttempts;
-        message = `Incorrect email or password. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining before your account is temporarily locked.`;
+        await user.save({ validateModifiedOnly: true });
       }
 
-      await user.save({ validateModifiedOnly: true });
-      return res.status(401).json({ success: false, message });
+      // Identical response whether the account exists or not — no "N attempts
+      // remaining" and no "locked" hint on the attempt that triggers the lock.
+      return res.status(401).json({ success: false, message: 'Incorrect email or password' });
     }
 
     // Correct password — clear any prior failed-attempt count
