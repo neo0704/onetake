@@ -394,6 +394,21 @@ exports.updateStatus = async (req, res) => {
   try {
     const { status, completionNotes, note } = req.body;
 
+    const VALID_STATUSES = ['inquiry_accepted', 'meeting_scheduled', 'needs_assessed', 'quotation_sent', 'confirmed',
+      'downpayment_paid', 'assigned', 'in_progress', 'completed_pending_balance', 'completed_paid', 'cancelled'];
+    if (!VALID_STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+
+    // Everything from "confirmed" onward requires a quotation the client has approved.
+    const NEEDS_APPROVED_QUOTE = ['confirmed', 'downpayment_paid', 'assigned', 'in_progress', 'completed_pending_balance', 'completed_paid'];
+    if (NEEDS_APPROVED_QUOTE.includes(status)) {
+      const approvedQ = await Quotation.findOne({ event: req.params.id, status: 'approved' });
+      if (!approvedQ) {
+        return res.status(400).json({ success: false, message: 'The client must approve a quotation first.' });
+      }
+    }
+
     // Don't let a payment-milestone status be set by hand unless it's
     // actually backed by verified payments — mirrors the check
     // paymentController.getPaymentSummary already does, and keeps
@@ -715,6 +730,10 @@ exports.assignResources = async (req, res) => {
     const verifiedPayments = await Payment.find({ event: event._id, status: 'verified' });
     const totalPaid = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
     const approvedQuotation = await Quotation.findOne({ event: event._id, status: 'approved' });
+
+    if (!approvedQuotation) {
+      return res.status(400).json({ success: false, message: 'The client must approve a quotation before assigning a team.' });
+    }
 
     if (approvedQuotation) {
       const requiredDownpayment = approvedQuotation.totalAmount * 0.5;

@@ -80,6 +80,12 @@ exports.sendQuotation = async (req, res) => {
         : '',
     };
 
+    const current = await Quotation.findById(req.params.id).select('status');
+    if (!current) return res.status(404).json({ success: false, message: 'Quotation not found' });
+    if (current.status === 'approved') {
+      return res.status(400).json({ success: false, message: 'This quotation is already approved and cannot be re-sent' });
+    }
+
     const quotation = await Quotation.findByIdAndUpdate(req.params.id, update, { new: true })
       .populate('event')
       .populate('client', 'name email emailNotificationsEnabled');
@@ -135,14 +141,45 @@ exports.getQuotation = async (req, res) => {
       .populate('createdBy', 'name');
 
     if (!quotation) return res.status(404).json({ success: false, message: 'Quotation not found' });
+    if (req.user.role === 'client' && quotation.client?._id?.toString() !== String(req.user.id)) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
     res.json({ success: true, quotation });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
+// Only the quotation's own client may approve/reject it, and only while it is
+// waiting on them (status 'sent'). Returns the quotation, or sends an error and returns null.
+const loadForClientDecision = async (req, res) => {
+  const existing = await Quotation.findById(req.params.id);
+  if (!existing) {
+    res.status(404).json({ success: false, message: 'Quotation not found' });
+    return null;
+  }
+  if (req.user.role !== 'client' || existing.client?.toString() !== String(req.user.id)) {
+    res.status(403).json({ success: false, message: 'Only the client on this quotation can respond to it' });
+    return null;
+  }
+  if (existing.status !== 'sent') {
+    res.status(400).json({ success: false, message: 'This quotation is not awaiting your response' });
+    return null;
+  }
+  return existing;
+};
+
 exports.approveQuotation = async (req, res) => {
   try {
+    const existing = await loadForClientDecision(req, res);
+    if (!existing) return;
+
+    // Don't let an old quotation reset an event that has already moved on.
+    const currentEvent = await Event.findById(existing.event).select('status');
+    if (currentEvent && currentEvent.status !== 'quotation_sent') {
+      return res.status(400).json({ success: false, message: 'This event is no longer awaiting quotation approval' });
+    }
+
     const quotation = await Quotation.findByIdAndUpdate(req.params.id, {
       status: 'approved',
       approvedAt: new Date()
@@ -179,6 +216,9 @@ exports.approveQuotation = async (req, res) => {
 
 exports.rejectQuotation = async (req, res) => {
   try {
+    const existing = await loadForClientDecision(req, res);
+    if (!existing) return;
+
     const quotation = await Quotation.findByIdAndUpdate(req.params.id, {
       status: 'rejected',
       notes: req.body.reason
@@ -279,8 +319,28 @@ exports.addComment = async (req, res) => {
 
 exports.updateQuotation = async (req, res) => {
   try {
-    const quotation = await Quotation.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json({ success: true, quotation });
+    const quotation = await Quotation.findById(req.params.id);
+    if (!quotation) return res.status(404).json({ success: false, message: 'Quotation not found' });
+    if (quotation.status === 'approved') {
+      return res.status(400).json({ success: false, message: 'An approved quotation can no longer be edited' });
+    }
+
+    // Whitelist — never let the request body set status, client, event, approvedAt, etc.
+    const ALLOWED = ['services', 'equipment', 'manpower', 'subtotal', 'tax', 'discount', 'totalAmount', 'conditions', 'notes', 'validUntil'];
+    const update = {};
+    ALLOWED.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+
+    if (update.totalAmount !== undefined) {
+      const total = Number(update.totalAmount);
+      update.paymentTerms = {
+        downpaymentPercentage: 50,
+        downpaymentAmount: total * 0.5,
+        balanceAmount: total - total * 0.5,
+      };
+    }
+
+    const updated = await Quotation.findByIdAndUpdate(req.params.id, update, { new: true });
+    res.json({ success: true, quotation: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
