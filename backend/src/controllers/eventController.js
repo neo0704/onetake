@@ -1157,10 +1157,9 @@ exports.checkIn = async (req, res) => {
       return res.status(403).json({ success: false, message: 'You are not assigned to this event' });
     }
 
-    // Map all uploaded proof photos to their public URLs
-    const proofPhotos = (req.files && req.files.length > 0)
-      ? req.files.map(f => `/uploads/checkin/${f.filename}`)
-      : (req.file ? [`/uploads/checkin/${req.file.filename}`] : []);
+    // Proof photos were uploaded to Cloudinary by the route middleware —
+    // save their full https URLs.
+    const proofPhotos = (req.files || []).map(f => f.cloudinaryUrl).filter(Boolean);
 
     const idx = event.attendance.findIndex(a => a.freelancer.toString() === req.user.id);
 

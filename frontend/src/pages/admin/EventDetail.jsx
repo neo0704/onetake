@@ -20,6 +20,14 @@ import toast from 'react-hot-toast';
 //    instead of hitting the React dev-server.
 const API_ORIGIN = (api.defaults.baseURL || '').replace(/\/api.*$/, '');
 
+// Uploaded files can be either a full URL (Cloudinary) or a relative path served
+// by this backend (/uploads/...). Only the relative ones need the API origin
+// prefixed — prefixing a Cloudinary URL would produce a broken address.
+const assetUrl = (u) => {
+  if (!u) return '';
+  return /^(https?:)?\/\//i.test(u) || u.startsWith('data:') ? u : `${API_ORIGIN}${u}`;
+};
+
 const STATUS_ORDER = [
   'inquiry_accepted', 'meeting_scheduled',
   'needs_assessed', 'quotation_sent', 'confirmed', 'downpayment_paid',
@@ -314,7 +322,7 @@ function AttachmentList({ attachments }) {
     <div className="flex flex-wrap gap-2 mt-1.5">
       {attachments.map((att, ai) => {
         const isImage = att.type?.startsWith('image/');
-        const href = `${API_ORIGIN}${att.url}`;
+        const href = assetUrl(att.url);
         return isImage ? (
           <a key={ai} href={href} target="_blank" rel="noopener noreferrer">
             <img src={href} alt={att.name} className="w-28 h-28 object-cover rounded-lg border border-white/10 hover:opacity-90 transition-opacity" />
@@ -637,7 +645,7 @@ function DirectMessagesPopup({ event, onSend, myRole, locked }) {
                           <div className={`flex flex-col gap-1 ${msg.content ? 'mt-1' : ''}`}>
                             {msg.attachments.map((att, ai) => {
                               const isImage = att.type?.startsWith('image/');
-                              const fullUrl = `${API_ORIGIN}${att.url}`;
+                              const fullUrl = assetUrl(att.url);
                               return isImage ? (
                                 <a key={ai} href={fullUrl} target="_blank" rel="noreferrer">
                                   <img src={fullUrl} alt={att.name}
@@ -1591,7 +1599,7 @@ export default function AdminEventDetail() {
                               title={`View proof photo ${photoIdx + 1}`}
                             >
                               <img
-                                src={`${API_ORIGIN}${photo}`}
+                                src={assetUrl(photo)}
                                 alt={`Check-in proof ${photoIdx + 1}`}
                                 className="w-10 h-10 rounded-lg object-cover border border-white/20 group-hover:border-primary/60 transition-colors"
                               />
@@ -2033,7 +2041,7 @@ export default function AdminEventDetail() {
             </div>
 
             <img
-              src={`${API_ORIGIN}${lightboxPhotos[lightboxIndex]}`}
+              src={assetUrl(lightboxPhotos[lightboxIndex])}
               alt={`Check-in proof ${lightboxIndex + 1}`}
               className="w-full rounded-2xl border border-white/10 object-contain max-h-[70vh]"
             />
