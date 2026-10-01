@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import useAuthStore from './store/authStore';
 import useNotificationStore from './store/notificationStore';
 import { initSocket } from './services/socket';
@@ -77,8 +77,10 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 // Shows HomePage to guests; redirects logged-in users to their dashboard
 const HomeRoute = () => {
   const { user, loading } = useAuthStore();
+  const [params] = useSearchParams();
   if (loading) return null;
-  if (!user) return <HomePage />;
+  // ?preview=1 lets a logged-in admin view the public homepage (used by "Preview Site")
+  if (!user || params.get('preview') === '1') return <HomePage />;
   if (user.role === 'admin')      return <Navigate to="/admin"      replace />;
   if (user.role === 'client')     return <Navigate to="/client"     replace />;
   if (user.role === 'freelancer') return <Navigate to="/freelancer" replace />;

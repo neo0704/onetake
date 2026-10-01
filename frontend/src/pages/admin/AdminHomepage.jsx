@@ -131,7 +131,7 @@ function ImageListEditor({ images, onChange }) {
           onDragLeave={() => setDragOver(false)}
           onDrop={onDrop}
           onClick={() => !uploading && fileInputRef.current?.click()}
-          className={`relative flex flex-col items-center justify-center gap-3 p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all select-none
+          className={`relative flex flex-col items-center justify-center gap-3 p-5 sm:p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all select-none
             ${dragOver ? 'border-primary bg-primary/10 scale-[1.01]' : 'border-white/15 bg-white/[0.02] hover:border-white/30 hover:bg-white/5'}
             ${uploading ? 'pointer-events-none opacity-60' : ''}`}>
           <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif"
@@ -191,9 +191,9 @@ function ImageListEditor({ images, onChange }) {
                   {img.url.startsWith('/uploads') ? 'uploaded' : 'url'}
                 </span>
               </div>
-              <button onClick={() => moveUp(i)}   disabled={i === 0}               className="p-1 text-white/30 hover:text-white disabled:opacity-20 transition-colors"><ChevronUp   className="w-3.5 h-3.5" /></button>
-              <button onClick={() => moveDown(i)} disabled={i === images.length-1} className="p-1 text-white/30 hover:text-white disabled:opacity-20 transition-colors"><ChevronDown className="w-3.5 h-3.5" /></button>
-              <button onClick={() => removeImage(i)} className="p-1 text-white/30 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button onClick={() => moveUp(i)}   disabled={i === 0}               className="p-1.5 text-white/30 hover:text-white disabled:opacity-20 transition-colors"><ChevronUp   className="w-3.5 h-3.5" /></button>
+              <button onClick={() => moveDown(i)} disabled={i === images.length-1} className="p-1.5 text-white/30 hover:text-white disabled:opacity-20 transition-colors"><ChevronDown className="w-3.5 h-3.5" /></button>
+              <button onClick={() => removeImage(i)} className="p-1.5 text-white/30 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           ))}
         </div>
@@ -317,14 +317,14 @@ export default function AdminHomepage() {
         title="Homepage Manager"
         subtitle="Manage portfolio projects and the featured video section"
         action={
-          <a href="/" target="_blank" rel="noreferrer" className="btn-secondary flex items-center gap-2 text-sm">
+          <a href="/?preview=1" target="_blank" rel="noreferrer" className="btn-secondary flex items-center gap-2 text-sm">
             <ExternalLink className="w-4 h-4" /> Preview Site
           </a>
         }
       />
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-white/10">
+      <div className="flex gap-1 border-b border-white/10 overflow-x-auto">
         {[
           { key: 'portfolio', label: 'Portfolio Projects', icon: <ImageIcon className="w-4 h-4" /> },
           { key: 'video',     label: 'Featured Video',    icon: <Film      className="w-4 h-4" /> },
@@ -340,7 +340,7 @@ export default function AdminHomepage() {
       {/* ══ PORTFOLIO TAB ══ */}
       {tab === 'portfolio' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="text-white/40 text-sm">{projects.length} project{projects.length !== 1 ? 's' : ''}</p>
             <button onClick={openNew} className="btn-primary"><Plus className="w-4 h-4" /> Add Project</button>
           </div>
@@ -355,12 +355,12 @@ export default function AdminHomepage() {
 
           {projects.map((proj, idx) => (
             <div key={proj._id}
-              className={`card flex gap-4 items-start transition-all
+              className={`card flex flex-col sm:flex-row gap-4 sm:items-start transition-all
                 ${!proj.isActive ? 'opacity-50' : ''}
                 ${proj.featured ? 'border border-primary/30 bg-primary/5' : ''}`}>
 
               {/* Thumbnail */}
-              <div className="w-24 h-16 rounded-xl overflow-hidden bg-white/5 flex-shrink-0 border border-white/10">
+              <div className="w-full h-40 sm:w-24 sm:h-16 rounded-xl overflow-hidden bg-white/5 flex-shrink-0 border border-white/10">
                 {getCover(proj)
                   ? <img src={getCover(proj)} alt="" className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center text-white/20 text-xs font-bold">{proj.client?.[0] || '?'}</div>}
@@ -391,25 +391,25 @@ export default function AdminHomepage() {
               </div>
 
               {/* Actions */}
-              <div className="flex flex-col gap-1.5 flex-shrink-0">
+              <div className="flex flex-row flex-wrap sm:flex-col gap-1.5 sm:flex-shrink-0">
                 <button onClick={() => openEdit(proj)}
-                  className="btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5">
+                  className="btn-ghost text-xs px-3 py-1.5 flex items-center justify-center gap-1.5 flex-1 sm:flex-none">
                   <Edit3 className="w-3.5 h-3.5" /> Edit
                 </button>
                 <button onClick={() => toggleFeatured(proj)}
-                  className={`text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5
+                  className={`text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center justify-center gap-1.5 flex-1 sm:flex-none
                     ${proj.featured ? 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20' : 'bg-white/5 text-white/40 border-white/10 hover:text-white hover:border-white/20'}`}>
                   {proj.featured ? <><StarOff className="w-3.5 h-3.5" /> Unfeature</> : <><Star className="w-3.5 h-3.5" /> Feature</>}
                 </button>
                 <button onClick={() => toggleActive(proj)}
-                  className="btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5">
+                  className="btn-ghost text-xs px-3 py-1.5 flex items-center justify-center gap-1.5 flex-1 sm:flex-none">
                   {proj.isActive ? <><EyeOff className="w-3.5 h-3.5" /> Hide</> : <><Eye className="w-3.5 h-3.5" /> Show</>}
                 </button>
                 <button onClick={() => setDelTarget(proj)}
-                  className="text-xs px-3 py-1.5 rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center gap-1.5">
+                  className="text-xs px-3 py-1.5 rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5 flex-1 sm:flex-none">
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </button>
-                <div className="flex gap-1">
+                <div className="flex gap-1 flex-1 sm:flex-none">
                   <button onClick={() => moveOrder(proj, -1)} disabled={idx === 0}
                     className="flex-1 btn-ghost text-xs py-1 disabled:opacity-20"><ChevronUp   className="w-3.5 h-3.5 mx-auto" /></button>
                   <button onClick={() => moveOrder(proj,  1)} disabled={idx === projects.length - 1}
@@ -479,7 +479,7 @@ export default function AdminHomepage() {
           )}
 
           {/* Title / Subtitle */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="label">Section Title</label>
               <input className="input" placeholder="BEHIND THE LENS" value={videoForm.title} onChange={e => setVF('title', e.target.value)} />
@@ -502,7 +502,7 @@ export default function AdminHomepage() {
       <Modal isOpen={showProj} onClose={() => setShowProj(false)} title={editingProj ? 'Edit Project' : 'Add New Project'}>
         <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="label">Client Name *</label>
               <input className="input" placeholder="e.g. Metrobank"
@@ -551,7 +551,7 @@ export default function AdminHomepage() {
           </div>
 
           {/* Toggles */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div onClick={() => setProjForm(f => ({ ...f, featured: !f.featured }))}
               className={`flex-1 flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
                 ${projForm.featured ? 'bg-primary/10 border-primary/30' : 'bg-white/5 border-white/10'}`}>
