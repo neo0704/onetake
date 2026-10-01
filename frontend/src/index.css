@@ -169,9 +169,13 @@ video { object-fit: cover; width: 100%; height: 100%; border-radius: 12px; backg
   --c-primary-700: 138 73 10;
 }
 
-/* Hardcoded dark backgrounds used by layouts and dialogs follow the theme */
+/* Hardcoded dark backgrounds used by layouts, dialogs and panels follow the theme */
 :root[data-theme="light"] .bg-\[\#0f0f1a\] { background-color: var(--app-bg); }
-:root[data-theme="light"] [class*="bg-[#1a1a2e]"] { background-color: rgb(var(--c-surface)); }
+:root[data-theme="light"] [class*="bg-[#1a1a2e]"],
+:root[data-theme="light"] [class*="bg-[#1a2338]"],
+:root[data-theme="light"] [class*="bg-[#16213e]"] { background-color: rgb(var(--c-surface)); }
+:root[data-theme="light"] [class*="bg-[#161f2e]"],
+:root[data-theme="light"] [class*="bg-[#0f3460]"] { background-color: rgb(var(--c-surface-2)); }
 
 /* Text sitting on a solid colour (buttons, gradients, small image labels) stays white.
    Full-screen overlays (.fixed / .modal-overlay) are excluded on purpose: the panels
@@ -189,7 +193,9 @@ video { object-fit: cover; width: 100%; height: 100%; border-radius: 12px; backg
 /* Surfaces always restore the theme's text colour, even when nested inside
    something that forced white text (gradients, image overlays). */
 .card, .modal, .modal-lg, .input, .btn-secondary,
-.bg-dark-800, .bg-dark-900, [class*="bg-[#1a1a2e]"] {
+.bg-dark-800, .bg-dark-900,
+[class*="bg-[#1a1a2e]"], [class*="bg-[#1a2338]"], [class*="bg-[#16213e]"],
+[class*="bg-[#161f2e]"], [class*="bg-[#0f3460]"] {
   --c-white: var(--c-ink);
 }
 

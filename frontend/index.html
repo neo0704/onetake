@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OneTake</title>
+    <script>
+      // Apply the saved light/dark theme before anything paints, so the loading
+      // screen and first render already use the right colours (no dark flash on refresh).
+      (function () {
+        try {
+          var d = document.documentElement;
+          var m = location.pathname.match(/^\/(admin|client|freelancer)(\/|$)/);
+          var t, portal;
+          if (m) {
+            portal = m[1];
+            t = localStorage.getItem('onetake-theme-' + portal);
+          } else if (/^\/(login|register|forgot-password)\/?$/.test(location.pathname)) {
+            portal = 'admin';
+            t = localStorage.getItem('onetake-last-theme');
+          } else { return; }
+          d.setAttribute('data-portal', portal);
+          d.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
