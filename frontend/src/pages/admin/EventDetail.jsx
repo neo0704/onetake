@@ -1129,7 +1129,7 @@ export default function AdminEventDetail() {
   })();
 
   return (
-    <div className="space-y-5 animate-fade-in max-w-7xl mx-auto">
+    <div className="space-y-5 animate-fade-in max-w-7xl mx-auto pb-24 lg:pb-0">
 
       {/* ── Cancellation Resolution Modal ─────────────────────────────────── */}
       <Modal
@@ -1183,7 +1183,7 @@ export default function AdminEventDetail() {
             />
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col-reverse sm:flex-row gap-3">
             <button onClick={() => setShowCancelModal(false)} disabled={cancelLoading} className="btn-ghost flex-1 justify-center">
               Go Back
             </button>
@@ -1207,23 +1207,23 @@ export default function AdminEventDetail() {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 min-w-0">
           <button onClick={() => navigate('/admin/events')} className="btn-ghost p-2 flex-shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="page-title">{event.eventName}</h1>
+              <h1 className="page-title break-words min-w-0">{event.eventName}</h1>
               <StatusBadge status={event.status} />
               <MessagingSettingsPopover event={event} onToggle={toggleMessagingSetting} savingField={savingMessagingField} />
             </div>
-            <p className="text-white/50 text-sm mt-0.5 truncate">
+            <p className="text-white/50 text-sm mt-0.5 break-words sm:truncate">
               {event.client?.name} · {formatDate(event.eventDate)} · {event.location}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 sm:flex-shrink-0 pl-[52px] sm:pl-0">
+        <div className="flex flex-wrap gap-2 sm:flex-shrink-0 w-full sm:w-auto sm:justify-end [&>button]:flex-1 [&>button]:basis-[140px] [&>button]:justify-center [&>button]:text-center sm:[&>button]:flex-none sm:[&>button]:basis-auto">
           {event.status === 'inquiry_received' && (<>
             <button onClick={() => askConfirm({
               title: 'Accept Inquiry?',
@@ -1389,14 +1389,14 @@ export default function AdminEventDetail() {
               )}
             </div>
           </div>
-          <div className="flex gap-2 pt-1">
+          <div className="flex flex-col sm:flex-row gap-2 pt-1">
             <button onClick={() => openCancelResolution('reject')}
-              className="flex-1 py-2 bg-white/5 border border-white/10 text-white/70 rounded-lg text-sm font-medium
+              className="flex-1 px-3 py-2 bg-white/5 border border-white/10 text-white/70 rounded-lg text-sm font-medium
                 hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-400 transition-colors">
               Reject — Keep Event Active
             </button>
             <button onClick={() => openCancelResolution('approve')}
-              className="flex-1 py-2 bg-red-500/15 border border-red-500/30 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/25 transition-colors">
+              className="flex-1 px-3 py-2 bg-red-500/15 border border-red-500/30 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/25 transition-colors">
               Approve Cancellation
             </button>
           </div>
@@ -1551,9 +1551,9 @@ export default function AdminEventDetail() {
           {['in_progress', 'completed_pending_balance', 'completed_paid'].includes(event.status) &&
            (event.assignedFreelancers || []).length > 0 && (
             <div className="card">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between gap-2 mb-3">
                 <h3 className="section-title">Check-In Status</h3>
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap
                   ${(event.attendance || []).filter(a => a.checkedIn).length === event.assignedFreelancers.length
                     ? 'bg-green-500/20 text-green-400'
                     : 'bg-orange-500/20 text-orange-400'}`}>
@@ -1569,18 +1569,18 @@ export default function AdminEventDetail() {
                   );
                   const checked = att?.checkedIn || false;
                   return (
-                    <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border
+                    <div key={i} className={`flex flex-wrap items-center gap-x-3 gap-y-2 p-3 rounded-xl border
                       ${checked ? 'bg-green-500/5 border-green-500/20' : 'bg-orange-500/5 border-orange-500/10'}`}>
                       <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0
                         ${checked ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/15 text-orange-400'}`}>
                         {(af.freelancer?.name || '?')[0]}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium text-sm">{af.freelancer?.name}</p>
-                        <p className="text-white/40 text-xs">{af.role || 'No role assigned'}</p>
+                      <div className="flex-1 min-w-[140px]">
+                        <p className="text-white font-medium text-sm break-words">{af.freelancer?.name}</p>
+                        <p className="text-white/40 text-xs break-words">{af.role || 'No role assigned'}</p>
                         {checked && att?.checkInTime && (
-                          <p className="text-green-400/70 text-xs mt-0.5 flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3" />
+                          <p className="text-green-400/70 text-xs mt-0.5 flex flex-wrap items-center gap-1">
+                            <CheckCircle className="w-3 h-3 flex-shrink-0" />
                             {new Date(att.checkInTime).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                             {' at '}
                             {new Date(att.checkInTime).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
@@ -1588,9 +1588,11 @@ export default function AdminEventDetail() {
                         )}
                       </div>
 
+                      {/* Photos + status badge: own line on phones, inline on larger screens */}
+                      <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pl-12 sm:pl-0">
                       {/* ── Proof photo thumbnails (multiple) ───────────────── */}
                       {checked && att?.proofPhotos?.length > 0 && (
-                        <div className="flex gap-1 flex-shrink-0">
+                        <div className="flex flex-wrap gap-1.5 min-w-0">
                           {att.proofPhotos.map((photo, photoIdx) => (
                             <button
                               key={photoIdx}
@@ -1619,10 +1621,11 @@ export default function AdminEventDetail() {
                         <span className="text-white/20 text-xs flex-shrink-0 italic">no photo</span>
                       )}
 
-                      <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0
+                      <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 whitespace-nowrap ml-auto
                         ${checked ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/15 text-orange-400'}`}>
                         {checked ? <><CheckCircle className="w-3 h-3" /> Checked In</> : 'Not Yet'}
                       </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -1993,7 +1996,7 @@ export default function AdminEventDetail() {
             </div>
           </div>
           <p className="text-white/60 text-sm">Would you still like to proceed with the assignment?</p>
-          <div className="flex gap-3">
+          <div className="flex flex-col-reverse sm:flex-row gap-3">
             <button onClick={() => setShowPayWarn(false)} className="btn-secondary flex-1 justify-center">
               Cancel — Wait for Payment
             </button>
