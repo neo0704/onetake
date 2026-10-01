@@ -105,10 +105,12 @@ video { object-fit: cover; width: 100%; height: 100%; border-radius: 12px; backg
    Dark is the default (these :root values match the original look exactly).
    Light mode is switched on by the layouts: <html data-theme="light" data-portal="admin|client|freelancer">
    --c-white is the "ink" colour: white in dark mode, dark text in light mode.
+   --c-ink always holds the theme's real text colour, so surfaces can restore it.
    ═══════════════════════════════════════════════════════════════════════════ */
 :root {
   color-scheme: dark;
   --c-white: 255 255 255;
+  --c-ink: 255 255 255;
   --c-surface: 22 33 62;
   --c-surface-2: 15 52 96;
   --c-primary: 233 69 96;
@@ -125,6 +127,7 @@ video { object-fit: cover; width: 100%; height: 100%; border-radius: 12px; backg
 :root[data-theme="light"][data-portal="admin"] {
   color-scheme: light;
   --c-white: 22 24 48;
+  --c-ink: 22 24 48;
   --c-surface: 255 255 255;
   --c-surface-2: 236 238 247;
   --app-bg: #f2f3f9;
@@ -136,6 +139,7 @@ video { object-fit: cover; width: 100%; height: 100%; border-radius: 12px; backg
 :root[data-theme="light"][data-portal="client"] {
   color-scheme: light;
   --c-white: 16 42 40;
+  --c-ink: 16 42 40;
   --c-surface: 255 255 255;
   --c-surface-2: 230 241 239;
   --app-bg: #eef6f4;
@@ -152,6 +156,7 @@ video { object-fit: cover; width: 100%; height: 100%; border-radius: 12px; backg
 :root[data-theme="light"][data-portal="freelancer"] {
   color-scheme: light;
   --c-white: 45 34 24;
+  --c-ink: 45 34 24;
   --c-surface: 255 253 249;
   --c-surface-2: 245 236 222;
   --app-bg: #faf5ec;
@@ -164,17 +169,28 @@ video { object-fit: cover; width: 100%; height: 100%; border-radius: 12px; backg
   --c-primary-700: 138 73 10;
 }
 
-/* Hardcoded page background used by the layouts */
+/* Hardcoded dark backgrounds used by layouts and dialogs follow the theme */
 :root[data-theme="light"] .bg-\[\#0f0f1a\] { background-color: var(--app-bg); }
+:root[data-theme="light"] [class*="bg-[#1a1a2e]"] { background-color: rgb(var(--c-surface)); }
 
-/* Text sitting on a solid colour (buttons, gradients, image overlays) stays white */
+/* Text sitting on a solid colour (buttons, gradients, small image labels) stays white.
+   Full-screen overlays (.fixed / .modal-overlay) are excluded on purpose: the panels
+   inside them must keep the normal theme text colour. */
 .btn-primary,
 .bg-primary, .bg-primary-600, .bg-primary-700,
 .bg-red-500, .bg-red-600, .bg-green-500, .bg-green-600,
 .bg-blue-500, .bg-blue-600, .bg-yellow-500, .bg-orange-500,
 .bg-purple-500, .bg-teal-500, .bg-emerald-500,
-[class*="bg-gradient"], [class*="bg-black/"], [class*="bg-red-500/90"] {
+[class*="bg-gradient"], [class*="bg-red-500/90"],
+[class*="bg-black/"]:not(.fixed):not(.modal-overlay) {
   --c-white: 255 255 255;
+}
+
+/* Surfaces always restore the theme's text colour, even when nested inside
+   something that forced white text (gradients, image overlays). */
+.card, .modal, .modal-lg, .input, .btn-secondary,
+.bg-dark-800, .bg-dark-900, [class*="bg-[#1a1a2e]"] {
+  --c-white: var(--c-ink);
 }
 
 /* Status / accent text: the 400 shades are too pale on a light background */

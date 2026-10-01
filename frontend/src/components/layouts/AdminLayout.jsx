@@ -9,8 +9,7 @@ import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
 import NotificationPanel from '../shared/NotificationPanel';
 import NotificationPreferencesPanel from '../shared/NotificationPreferencesPanel';
-import ThemeToggle from '../shared/ThemeToggle';
-import useTheme from '../../hooks/useTheme';
+import { useTheme, ThemeToggle } from '../shared/theme';
 import ChangePasswordModal from '../shared/ChangePasswordModal';
 
 // A link is either a single item ({ to }) or a group ({ children }).

@@ -8,8 +8,7 @@ import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
 import NotificationPanel from '../shared/NotificationPanel';
 import NotificationPreferencesPanel from '../shared/NotificationPreferencesPanel';
-import ThemeToggle from '../shared/ThemeToggle';
-import useTheme from '../../hooks/useTheme';
+import { useTheme, ThemeToggle } from '../shared/theme';
 
 const LINKS = [
   { to: '/freelancer',          icon: LayoutDashboard, label: 'Dashboard',  end: true },
