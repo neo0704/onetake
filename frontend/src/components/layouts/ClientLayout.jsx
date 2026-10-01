@@ -8,6 +8,8 @@ import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
 import NotificationPanel from '../shared/NotificationPanel';
 import NotificationPreferencesPanel from '../shared/NotificationPreferencesPanel';
+import ThemeToggle from '../shared/ThemeToggle';
+import useTheme from '../../hooks/useTheme';
 
 const links = [
   { to: '/client', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -27,6 +29,7 @@ export default function ClientLayout() {
   const [showNotifs,    setShowNotifs]    = useState(false);
   const [showSettings,  setShowSettings]  = useState(false);
   const navigate = useNavigate();
+  const { theme, toggle: toggleTheme } = useTheme('client');
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -107,6 +110,7 @@ export default function ClientLayout() {
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex-1" />
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <div className="relative">
             <button onClick={() => setShowSettings(!showSettings)}
               className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
@@ -129,7 +133,7 @@ export default function ClientLayout() {
         </header>
 
         {/* Content — centered wrapper so pages don't visually shift as the sidebar collapses/expands */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>

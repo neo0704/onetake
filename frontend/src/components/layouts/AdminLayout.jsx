@@ -9,6 +9,8 @@ import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
 import NotificationPanel from '../shared/NotificationPanel';
 import NotificationPreferencesPanel from '../shared/NotificationPreferencesPanel';
+import ThemeToggle from '../shared/ThemeToggle';
+import useTheme from '../../hooks/useTheme';
 import ChangePasswordModal from '../shared/ChangePasswordModal';
 
 // A link is either a single item ({ to }) or a group ({ children }).
@@ -34,6 +36,7 @@ export default function AdminLayout() {
   const [showChangePw,  setShowChangePw]  = useState(false);
   const [openGroups,    setOpenGroups]    = useState({});      // { Finance: true, ... }
   const navigate = useNavigate();
+  const { theme, toggle: toggleTheme } = useTheme('admin');
   const { pathname } = useLocation();
 
   const handleLogout = () => { logout(); navigate('/login'); };
@@ -175,6 +178,7 @@ export default function AdminLayout() {
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex-1" />
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <div className="relative">
             <button onClick={() => setShowSettings(!showSettings)}
               className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors">

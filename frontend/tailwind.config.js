@@ -4,8 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: { DEFAULT: '#e94560', 50: '#fff0f3', 100: '#ffe0e6', 500: '#e94560', 600: '#d63a55', 700: '#b82d45' },
-        dark: { DEFAULT: '#1a1a2e', 50: '#f5f5fa', 100: '#eaeaf5', 800: '#16213e', 900: '#0f3460' }
+        // "white" is the text/border/tint colour; light mode swaps it for dark ink via CSS variables
+        white: 'rgb(var(--c-white) / <alpha-value>)',
+        primary: {
+          DEFAULT: 'rgb(var(--c-primary) / <alpha-value>)',
+          50:  'rgb(var(--c-primary-50) / <alpha-value>)',
+          100: 'rgb(var(--c-primary-100) / <alpha-value>)',
+          500: 'rgb(var(--c-primary) / <alpha-value>)',
+          600: 'rgb(var(--c-primary-600) / <alpha-value>)',
+          700: 'rgb(var(--c-primary-700) / <alpha-value>)'
+        },
+        dark: {
+          DEFAULT: '#1a1a2e', 50: '#f5f5fa', 100: '#eaeaf5',
+          800: 'rgb(var(--c-surface) / <alpha-value>)',
+          900: 'rgb(var(--c-surface-2) / <alpha-value>)'
+        }
       },
       fontFamily: {
         sans: ['Syne', 'sans-serif'],
