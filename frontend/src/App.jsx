@@ -179,7 +179,7 @@ export default function App() {
           <Route path="reports" element={<AdminReports />} />
           <Route path="meetings" element={<AdminMeetings />} />
           <Route path="homepage" element={<AdminHomepage />} />
-
+             <Route path="people" element={<People />} />
         </Route>
 
         {/* Client */}

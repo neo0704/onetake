@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, CalendarDays, FileText, CreditCard,
+  LayoutDashboard, CalendarDays, CreditCard,
   Users, Package, BarChart3, Video, LogOut, Menu, X, Bell,
-  UserCog, ClipboardList, Banknote, Globe, KeyRound, Settings,
+  Globe, KeyRound, Settings, ChevronDown,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
@@ -11,19 +11,29 @@ import NotificationPanel from '../shared/NotificationPanel';
 import NotificationPreferencesPanel from '../shared/NotificationPreferencesPanel';
 import ChangePasswordModal from '../shared/ChangePasswordModal';
 
+// A link is either a single item ({ to }) or a group ({ children }).
 const links = [
-  { to: '/admin',                    icon: LayoutDashboard, label: 'Dashboard',        end: true },
-  { to: '/admin/events',             icon: CalendarDays,    label: 'Projects' },
-  { to: '/admin/quotations',         icon: FileText,        label: 'Quotations' },
-  { to: '/admin/payments',           icon: CreditCard,      label: 'Payments' },
-  { to: '/admin/payroll',            icon: Banknote,        label: 'Payroll' },
-  { to: '/admin/freelancers',        icon: Users,           label: 'Freelancers' },
-  { to: '/admin/equipment',          icon: Package,         label: 'Equipment' },
-  { to: '/admin/equipment-requests', icon: ClipboardList,   label: 'Equip. Requests' },
-  { to: '/admin/users',              icon: UserCog,         label: 'Users' },
-  { to: '/admin/meetings',           icon: Video,           label: 'Meetings' },
-  { to: '/admin/reports',            icon: BarChart3,       label: 'Reports' },
-  { to: '/admin/homepage',           icon: Globe,           label: 'Homepage' },
+  { to: '/admin',          icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/admin/events',   icon: CalendarDays,    label: 'Projects' },
+  {
+    label: 'Finance', icon: CreditCard,
+    children: [
+      { to: '/admin/quotations', label: 'Quotations' },
+      { to: '/admin/payments',   label: 'Payments' },
+      { to: '/admin/payroll',    label: 'Payroll' },
+    ],
+  },
+  { to: '/admin/people', icon: Users, label: 'People' },
+  {
+    label: 'Equipment', icon: Package,
+    children: [
+      { to: '/admin/equipment',          label: 'Equipment' },
+      { to: '/admin/equipment-requests', label: 'Equip. Requests' },
+    ],
+  },
+  { to: '/admin/meetings', icon: Video,     label: 'Meetings' },
+  { to: '/admin/reports',  icon: BarChart3, label: 'Reports' },
+  { to: '/admin/homepage', icon: Globe,     label: 'Homepage' },
 ];
 
 export default function AdminLayout() {
@@ -35,12 +45,30 @@ export default function AdminLayout() {
   const [showNotifs,    setShowNotifs]    = useState(false);
   const [showSettings,  setShowSettings]  = useState(false);
   const [showChangePw,  setShowChangePw]  = useState(false);
+  const [openGroups,    setOpenGroups]    = useState({});      // { Finance: true, ... }
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
   // Visually expanded = pinned open, or collapsed-but-hovered
   const expanded = !collapsed || hoverExpanded;
+
+  const isChildActive = (group) =>
+    group.children.some(c => pathname === c.to || pathname.startsWith(c.to + '/'));
+
+  // Open the group that contains the current page (e.g. on load or deep link)
+  useEffect(() => {
+    links.forEach(l => {
+      if (l.children && isChildActive(l)) {
+        setOpenGroups(prev => (prev[l.label] ? prev : { ...prev, [l.label]: true }));
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  const toggleGroup = (label) =>
+    setOpenGroups(prev => ({ ...prev, [label]: !prev[label] }));
 
   return (
     <div className="flex h-screen bg-[#0f0f1a] overflow-hidden">
@@ -73,15 +101,52 @@ export default function AdminLayout() {
         <nav
           onMouseEnter={() => collapsed && setHoverExpanded(true)}
           className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          {links.map(({ to, icon: Icon, label, end }) => (
-            <NavLink key={to} to={to} end={end}
-              title={!expanded ? label : undefined}
-              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''} ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}
-              onClick={() => setSidebarOpen(false)}>
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <span className={!expanded ? 'lg:hidden' : ''}>{label}</span>
-            </NavLink>
-          ))}
+          {links.map((item) => {
+            const Icon = item.icon;
+
+            // Single link
+            if (!item.children) {
+              return (
+                <NavLink key={item.to} to={item.to} end={item.end}
+                  title={!expanded ? item.label : undefined}
+                  className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''} ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}
+                  onClick={() => setSidebarOpen(false)}>
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className={!expanded ? 'lg:hidden' : ''}>{item.label}</span>
+                </NavLink>
+              );
+            }
+
+            // Group with submenu
+            const isOpen = !!openGroups[item.label];
+            const childActive = isChildActive(item);
+            return (
+              <div key={item.label}>
+                <button type="button"
+                  onClick={() => toggleGroup(item.label)}
+                  title={!expanded ? item.label : undefined}
+                  aria-expanded={isOpen}
+                  className={`sidebar-link w-full ${childActive && !isOpen ? 'active' : ''} ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}>
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className={`flex-1 text-left ${!expanded ? 'lg:hidden' : ''}`}>{item.label}</span>
+                  <ChevronDown
+                    className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${!expanded ? 'lg:hidden' : ''}`} />
+                </button>
+
+                {isOpen && (
+                  <div className={`mt-1 ml-5 pl-3 border-l border-white/10 space-y-1 ${!expanded ? 'lg:hidden' : ''}`}>
+                    {item.children.map(child => (
+                      <NavLink key={child.to} to={child.to}
+                        className={({ isActive }) => `sidebar-link text-sm ${isActive ? 'active' : ''}`}
+                        onClick={() => setSidebarOpen(false)}>
+                        <span>{child.label}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         {/* User */}
