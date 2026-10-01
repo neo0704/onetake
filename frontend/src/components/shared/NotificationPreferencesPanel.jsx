@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Mail, Loader2 } from 'lucide-react';
 import api from '../../services/api'; // adjust path if needed
 
@@ -7,6 +8,33 @@ export default function NotificationPreferencesPanel({ onClose }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
+  const panelRef = useRef(null);
+  const { pathname } = useLocation();
+  const firstPath = useRef(pathname);
+
+  // Close when tapping/clicking anywhere outside, or pressing Esc.
+  // Clicks inside the panel's wrapper (the gear button lives there) are ignored
+  // so the gear can still toggle the panel without it instantly reopening.
+  useEffect(() => {
+    if (!onClose) return;
+    const wrapper = panelRef.current?.parentElement;
+    const handlePointer = (e) => {
+      if (wrapper && wrapper.contains(e.target)) return;
+      onClose();
+    };
+    const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('pointerdown', handlePointer);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointer);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [onClose]);
+
+  // Close when navigating to another page
+  useEffect(() => {
+    if (pathname !== firstPath.current) onClose?.();
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     api.get('/notification-preferences')
@@ -39,7 +67,7 @@ export default function NotificationPreferencesPanel({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-x-4 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-80 bg-dark-800 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+    <div ref={panelRef} className="fixed inset-x-4 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-80 bg-dark-800 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
       <div className="px-4 py-3 border-b border-white/10">
         <h3 className="text-white font-medium text-sm">Notification Settings</h3>
       </div>
