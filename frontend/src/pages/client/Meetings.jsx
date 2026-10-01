@@ -82,7 +82,7 @@ function MeetingCard({ meeting, onJoin }) {
 
       {meeting.status === 'expired' && (
         <p className="mt-3 text-orange-400/80 text-xs border-t border-white/10 pt-3">
-          This meeting's scheduled time passed and it was never started. Contact the team if you still need it.
+          This meeting's scheduled time has passed. Contact the team if you still need it.
         </p>
       )}
 
