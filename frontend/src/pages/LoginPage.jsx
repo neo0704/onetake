@@ -53,24 +53,43 @@ export default function LoginPage() {
       return;
     }
 
+    // Draw the button at the full width of the form (Google allows 200–400px)
+    const drawButton = () => {
+      if (!window.google || !googleBtnRef.current) return;
+      const w = Math.floor(googleBtnRef.current.parentElement.offsetWidth);
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        theme: 'filled_black',
+        size: 'large',
+        width: Math.max(200, Math.min(400, w)),
+        shape: 'pill',
+        text: 'continue_with',
+      });
+    };
+
     const initializeGoogle = () => {
       if (!window.google || !googleBtnRef.current) return;
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
       });
-      window.google.accounts.id.renderButton(googleBtnRef.current, {
-        theme: 'filled_black',
-        size: 'large',
-        width: Math.max(200, Math.min(336, Math.floor(googleBtnRef.current.parentElement.offsetWidth))),
-        shape: 'pill',
-        text: 'continue_with',
-      });
+      drawButton();
+    };
+
+    // Redraw if the screen is resized or rotated so the button keeps matching the form
+    let resizeTimer;
+    const onResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(drawButton, 200);
+    };
+    window.addEventListener('resize', onResize);
+    const cleanup = () => {
+      clearTimeout(resizeTimer);
+      window.removeEventListener('resize', onResize);
     };
 
     if (window.google) {
       initializeGoogle();
-      return;
+      return cleanup;
     }
 
     const script = document.createElement('script');
@@ -80,9 +99,8 @@ export default function LoginPage() {
     script.onload = initializeGoogle;
     document.body.appendChild(script);
 
-    return () => {
-      // Don't remove the script on unmount — other pages (e.g. register) may reuse it
-    };
+    // Don't remove the script on unmount — other pages (e.g. register) may reuse it
+    return cleanup;
   }, []);
 
   return (
@@ -144,7 +162,8 @@ export default function LoginPage() {
           </div>
 
           {/* Google Sign-In button gets rendered into this div by Google's script */}
-          <div className="flex justify-center w-full overflow-hidden">
+          {/* colorScheme: 'light' stops the browser painting an opaque white box behind Google's iframe on this dark page */}
+          <div className="flex justify-center w-full overflow-hidden" style={{ colorScheme: 'light' }}>
             <div ref={googleBtnRef} />
           </div>
 
