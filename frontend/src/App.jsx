@@ -27,7 +27,7 @@ import AdminUsers from './pages/admin/Users';
 import AdminReports from './pages/admin/Reports';
 import AdminMeetings from './pages/admin/Meetings';
 import AdminHomepage from './pages/admin/AdminHomepage';
-
+import People from './pages/admin/People';
 
 // Client pages
 import ClientLayout from './components/layouts/ClientLayout';
