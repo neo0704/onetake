@@ -6,11 +6,24 @@ import api from '../../services/api';
 import { LoadingSpinner, StatCard, StatusBadge } from '../../components/shared';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 
-const COLORS = ['#e94560', '#0f3460', '#16213e', '#533483', '#4ade80'];
+const COLORS = ['#e94560', '#3b82f6', '#f59e0b', '#8b5cf6', '#22c55e'];
+
+// Tooltip styled with the app's own themed classes so it follows light/dark mode
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0];
+  return (
+    <div className="card !p-2.5 text-sm shadow-lg">
+      <p className="text-white font-medium">{label || p.name}</p>
+      <p className="text-white/60 text-xs mt-0.5">{p.value}</p>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeIdx, setActiveIdx] = useState(null); // hovered bar / slice
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,49 +50,61 @@ export default function AdminDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Total Events" value={s.totalEvents || 0} icon={CalendarDays} color="bg-primary/20 text-primary" />
-        <StatCard label="Active Events" value={s.activeEvents || 0} icon={Clock} color="bg-blue-500/20 text-blue-400" />
-        <StatCard label="Completed" value={s.completedEvents || 0} icon={CheckCircle} color="bg-green-500/20 text-green-400" />
-        <StatCard label="Pending Inquiries" value={s.pendingInquiries || 0} icon={AlertCircle} color="bg-yellow-500/20 text-yellow-400" />
+        <StatCard label="Active Events" value={s.activeEvents || 0} icon={Clock} color="bg-blue-500/20 text-blue-500" />
+        <StatCard label="Completed" value={s.completedEvents || 0} icon={CheckCircle} color="bg-green-500/20 text-green-600" />
+        <StatCard label="Pending Inquiries" value={s.pendingInquiries || 0} icon={AlertCircle} color="bg-yellow-500/20 text-yellow-600" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <StatCard label="Total Clients" value={s.totalClients || 0} icon={Users} color="bg-purple-500/20 text-purple-400" />
-        <StatCard label="Freelancers" value={s.totalFreelancers || 0} icon={UserCheck} color="bg-teal-500/20 text-teal-400" />
-        <StatCard label="Total Revenue" value={formatCurrency(s.totalRevenue || 0)} icon={CreditCard} color="bg-emerald-500/20 text-emerald-400" />
+        <StatCard label="Total Clients" value={s.totalClients || 0} icon={Users} color="bg-purple-500/20 text-purple-500" />
+        <StatCard label="Freelancers" value={s.totalFreelancers || 0} icon={UserCheck} color="bg-teal-500/20 text-teal-600" />
+        <StatCard label="Total Revenue" value={formatCurrency(s.totalRevenue || 0)} icon={CreditCard} color="bg-emerald-500/20 text-emerald-600" />
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        <div className="card lg:col-span-2">
+        <div className="card lg:col-span-2 min-w-0">
           <h2 className="section-title mb-4">Event Overview</h2>
           {eventStatusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200} className="sm:!h-[220px]">
-              <BarChart data={eventStatusData} margin={{ left: -20, right: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }} axisLine={false} tickLine={false} width={32} />
-                <Tooltip contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }} />
-                <Bar dataKey="value" fill="#e94560" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="text-white">
+              <ResponsiveContainer width="100%" height={200} className="sm:!h-[220px]">
+                <BarChart data={eventStatusData} margin={{ left: -20, right: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.1} />
+                  <XAxis dataKey="name" tick={{ fill: 'currentColor', fillOpacity: 0.6, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fill: 'currentColor', fillOpacity: 0.6, fontSize: 11 }} axisLine={false} tickLine={false} width={32} />
+                  <Tooltip content={<ChartTooltip />} cursor={false} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]}
+                    onMouseEnter={(_, i) => setActiveIdx(i)} onMouseLeave={() => setActiveIdx(null)}>
+                    {eventStatusData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]}
+                        fillOpacity={activeIdx === null || activeIdx === i ? 1 : 0.35} style={{ transition: 'fill-opacity 150ms' }} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           ) : <p className="text-white/40 text-center py-10">No event data yet</p>}
         </div>
-        <div className="card">
+        <div className="card min-w-0">
           <h2 className="section-title mb-4">Event Distribution</h2>
           {eventStatusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={200} className="sm:!h-[220px]">
               <PieChart>
-                <Pie data={eventStatusData} cx="50%" cy="50%" innerRadius={50} outerRadius={78} dataKey="value" paddingAngle={3}>
-                  {eventStatusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                <Pie data={eventStatusData} cx="50%" cy="50%" innerRadius={50} outerRadius={78} dataKey="value" paddingAngle={3} stroke="none"
+                  onMouseEnter={(_, i) => setActiveIdx(i)} onMouseLeave={() => setActiveIdx(null)}>
+                  {eventStatusData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]}
+                      fillOpacity={activeIdx === null || activeIdx === i ? 1 : 0.35} style={{ transition: 'fill-opacity 150ms' }} />
+                  ))}
                 </Pie>
-                <Tooltip contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }} />
+                <Tooltip content={<ChartTooltip />} />
               </PieChart>
             </ResponsiveContainer>
           ) : <p className="text-white/40 text-center py-10">No data</p>}
           <div className="mt-2 space-y-1.5">
             {eventStatusData.map((item, i) => (
               <div key={i} className="flex items-center gap-2 text-sm">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
                 <span className="text-white/60">{item.name}</span>
                 <span className="ml-auto text-white font-medium">{item.value}</span>
               </div>
@@ -99,7 +124,7 @@ export default function AdminDashboard() {
             {(data?.recentEvents || []).length === 0 && <p className="text-white/40 text-sm">No events yet</p>}
             {(data?.recentEvents || []).map(event => (
               <div key={event._id} onClick={() => navigate(`/admin/events/${event._id}`)}
-                className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors">
+                className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer">
                 <div className="min-w-0">
                   <p className="text-white font-medium text-sm truncate">{event.eventName}</p>
                   <p className="text-white/40 text-xs truncate">{event.client?.name} · {formatDate(event.eventDate)}</p>
@@ -119,12 +144,12 @@ export default function AdminDashboard() {
             {(data?.pendingPayments || []).length === 0 && <p className="text-white/40 text-sm">No pending payments</p>}
             {(data?.pendingPayments || []).map(p => (
               <div key={p._id} onClick={() => navigate('/admin/payments')}
-                className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors">
+                className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer">
                 <div className="min-w-0">
                   <p className="text-white font-medium text-sm truncate">{p.event?.eventName || '—'}</p>
                   <p className="text-white/40 text-xs truncate">{p.client?.name} · {p.type}</p>
                 </div>
-                <span className="text-yellow-400 font-mono text-sm shrink-0">{formatCurrency(p.amount)}</span>
+                <span className="text-yellow-600 font-mono text-sm shrink-0">{formatCurrency(p.amount)}</span>
               </div>
             ))}
           </div>
