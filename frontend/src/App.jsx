@@ -10,7 +10,6 @@ import QuotationPrintView from './pages/client/QuotationPrintView';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import PublicThemeToggle from './components/shared/PublicThemeToggle';
 
 // Admin pages
 import AdminLayout from './components/layouts/AdminLayout';
@@ -155,9 +154,9 @@ export default function App() {
       <Routes>
         {/* Public */}
         <Route path="/"          element={<HomeRoute />} />
-        <Route path="/login"     element={<><PublicThemeToggle /><LoginPage /></>} />
-        <Route path="/register"  element={<><PublicThemeToggle /><RegisterPage /></>} />
-        <Route path="/forgot-password" element={<><PublicThemeToggle /><ForgotPasswordPage /></>} />
+        <Route path="/login"     element={<LoginPage />} />
+        <Route path="/register"  element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/quotation/print/:id" element={<QuotationPrintView />} />
         <Route path="/meeting/:roomId" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
 
