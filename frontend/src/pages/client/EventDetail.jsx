@@ -46,27 +46,27 @@ function CancelModal({ event, paymentSummary, onConfirm, onClose, loading }) {
   const canSubmit  = !loading && selected !== '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl animate-fade-in flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]">
 
         {/* Header */}
-        <div className="flex items-center gap-3 p-5 border-b border-white/10">
+        <div className="flex items-center gap-3 p-4 sm:p-5 border-b border-white/10 flex-shrink-0">
           <div className="w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center flex-shrink-0">
             <XCircle className="w-5 h-5 text-red-400" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h2 className="text-white font-semibold text-base">Request Cancellation</h2>
-            <p className="text-white/40 text-xs mt-0.5 truncate max-w-[260px]">{event.eventName}</p>
+            <p className="text-white/40 text-xs mt-0.5 truncate">{event.eventName}</p>
           </div>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 min-h-0">
 
           {/* Non-refundable warning */}
           {hasPaid && (
             <div className="flex gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
               <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
                 <p className="text-red-400 font-semibold text-sm">Payment is Non-Refundable</p>
                 <p className="text-white/60 text-xs leading-relaxed">
                   You have already paid{' '}
@@ -100,7 +100,7 @@ function CancelModal({ event, paymentSummary, onConfirm, onClose, loading }) {
                 return (
                   <label
                     key={r}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all
+                    className={`flex items-center gap-3 px-3 sm:px-4 py-3 rounded-xl border cursor-pointer transition-all
                       ${isSelected
                         ? 'bg-red-500/15 border-red-500/50'
                         : 'bg-white/5 border-white/10 hover:bg-white/8 hover:border-white/20'
@@ -123,7 +123,7 @@ function CancelModal({ event, paymentSummary, onConfirm, onClose, loading }) {
                       onChange={() => { setSelected(r); setOtherText(''); }}
                       className="sr-only"
                     />
-                    <span className={`text-sm font-medium ${isSelected ? 'text-red-300' : 'text-white/60'}`}>
+                    <span className={`text-sm font-medium break-words min-w-0 ${isSelected ? 'text-red-300' : 'text-white/60'}`}>
                       {r}
                     </span>
                   </label>
@@ -146,18 +146,18 @@ function CancelModal({ event, paymentSummary, onConfirm, onClose, loading }) {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 p-5 border-t border-white/10">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 p-4 sm:p-5 border-t border-white/10 flex-shrink-0">
           <button
             onClick={onClose}
             disabled={loading}
-            className="btn-ghost flex-1"
+            className="btn-ghost flex-1 justify-center"
           >
             Keep Event
           </button>
           <button
             onClick={() => onConfirm(finalReason)}
             disabled={!canSubmit || (isOthers && !otherText.trim())}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 font-medium text-sm
+            className="flex-1 px-4 py-2.5 rounded-xl text-center bg-red-500/20 border border-red-500/40 text-red-400 font-medium text-sm
               hover:bg-red-500/30 hover:border-red-500/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Submitting…' : 'Request Cancellation'}
@@ -171,39 +171,39 @@ function CancelModal({ event, paymentSummary, onConfirm, onClose, loading }) {
 // ── Withdraw Cancellation Confirmation Modal ──────────────────────────────────
 function WithdrawCancelModal({ event, onConfirm, onClose, loading }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl animate-fade-in flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]">
 
         {/* Header */}
-        <div className="flex items-center gap-3 p-5 border-b border-white/10">
+        <div className="flex items-center gap-3 p-4 sm:p-5 border-b border-white/10 flex-shrink-0">
           <div className="w-10 h-10 rounded-full bg-teal-500/15 flex items-center justify-center flex-shrink-0">
             <RotateCcw className="w-5 h-5 text-teal-400" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h2 className="text-white font-semibold text-base">Withdraw Cancellation?</h2>
-            <p className="text-white/40 text-xs mt-0.5 truncate max-w-[220px]">{event.eventName}</p>
+            <p className="text-white/40 text-xs mt-0.5 truncate">{event.eventName}</p>
           </div>
         </div>
 
-        <div className="p-5">
+        <div className="p-4 sm:p-5 overflow-y-auto">
           <p className="text-white/60 text-sm leading-relaxed">
             Are you sure you want to withdraw your cancellation request? Your event will be restored to its previous status and our team will continue processing it.
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 p-5 border-t border-white/10">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 p-4 sm:p-5 border-t border-white/10 flex-shrink-0">
           <button
             onClick={onClose}
             disabled={loading}
-            className="btn-ghost flex-1"
+            className="btn-ghost flex-1 justify-center"
           >
             No, Keep It
           </button>
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-400 font-medium text-sm
+            className="flex-1 px-4 py-2.5 rounded-xl text-center bg-teal-500/20 border border-teal-500/40 text-teal-400 font-medium text-sm
               hover:bg-teal-500/30 hover:border-teal-500/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Withdrawing…' : 'Yes, Withdraw'}
@@ -301,7 +301,7 @@ function FeedbackCard({ event, onSubmit, loading }) {
         maxLength={1000}
       />
 
-      <div className="flex items-center justify-between mt-3">
+      <div className="flex items-center justify-between gap-3 mt-3">
         <span className="text-white/25 text-xs">{comment.length}/1000</span>
         <button
           onClick={() => onSubmit({ rating, comment: comment.trim() })}
@@ -914,7 +914,7 @@ export default function ClientEventDetail() {
   })();
 
   return (
-    <div className="space-y-5 animate-fade-in max-w-7xl mx-auto">
+    <div className="space-y-5 animate-fade-in max-w-7xl mx-auto pb-24 lg:pb-0">
       {/* Cancel Modal */}
       {showCancelModal && (
         <CancelModal
@@ -938,15 +938,17 @@ export default function ClientEventDetail() {
 
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-        <button onClick={() => navigate('/client/events')} className="btn-ghost p-2 self-start flex-shrink-0">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="page-title truncate max-w-full">{event.eventName}</h1>
-            <StatusBadge status={event.status} />
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <button onClick={() => navigate('/client/events')} className="btn-ghost p-2 flex-shrink-0">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="page-title break-words min-w-0 max-w-full">{event.eventName}</h1>
+              <StatusBadge status={event.status} />
+            </div>
+            <p className="text-white/50 text-sm mt-0.5 break-words sm:truncate">{formatDate(event.eventDate)} · {event.location}</p>
           </div>
-          <p className="text-white/50 text-sm mt-0.5 truncate">{formatDate(event.eventDate)} · {event.location}</p>
         </div>
 
         {/* Cancel button — only shown when cancellation is possible */}
@@ -1144,14 +1146,14 @@ export default function ClientEventDetail() {
       {event.status === 'cancellation_requested' && (
         <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl space-y-2">
           <div className="flex items-center gap-2">
-            <XCircle className="w-4 h-4 text-orange-400" />
+            <XCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
             <p className="text-orange-400 font-semibold">Cancellation Pending Review</p>
           </div>
           <p className="text-white/50 text-sm">
             Your cancellation request has been submitted and is awaiting admin approval. We will notify you once a decision is made.
           </p>
           {event.cancellationRequest?.reason && (
-            <p className="text-white/30 text-xs italic border-t border-white/10 pt-2">
+            <p className="text-white/30 text-xs italic border-t border-white/10 pt-2 break-words">
               Your reason: {event.cancellationRequest.reason}
             </p>
           )}
@@ -1175,10 +1177,10 @@ export default function ClientEventDetail() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-white/10">
+      <div className="flex gap-1 border-b border-white/10 overflow-x-auto">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px
+            className={`px-4 py-2.5 text-sm font-medium capitalize whitespace-nowrap transition-colors border-b-2 -mb-px
               ${tab === t ? 'text-primary border-primary' : 'text-white/50 border-transparent hover:text-white'}`}>
             {t}
           </button>
