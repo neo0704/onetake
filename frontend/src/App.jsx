@@ -16,18 +16,13 @@ import AdminLayout from './components/layouts/AdminLayout';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminEvents from './pages/admin/Events';
 import AdminEventDetail from './pages/admin/EventDetail';
-import AdminQuotations from './pages/admin/Quotations';
 import AdminQuotationCreate from './pages/admin/QuotationCreate';
-import AdminPayments from './pages/admin/Payments';
-import AdminFreelancers from './pages/admin/Freelancers';
-import AdminEquipment from './pages/admin/Equipment';
-import AdminEquipmentRequests from './pages/admin/EquipmentRequests';
-import AdminPayroll from './pages/admin/Payroll';
-import AdminUsers from './pages/admin/Users';
 import AdminReports from './pages/admin/Reports';
 import AdminMeetings from './pages/admin/Meetings';
 import AdminHomepage from './pages/admin/AdminHomepage';
+import Finance from './pages/admin/Finance';
 import People from './pages/admin/People';
+import EquipmentManagement from './pages/admin/EquipmentManagement';
 
 // Client pages
 import ClientLayout from './components/layouts/ClientLayout';
@@ -168,18 +163,21 @@ export default function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="events" element={<AdminEvents />} />
           <Route path="events/:id" element={<AdminEventDetail />} />
-          <Route path="quotations" element={<AdminQuotations />} />
           <Route path="quotations/create/:eventId" element={<AdminQuotationCreate />} />
-          <Route path="payments" element={<AdminPayments />} />
-          <Route path="freelancers" element={<AdminFreelancers />} />
-          <Route path="equipment" element={<AdminEquipment />} />
-          <Route path="equipment-requests" element={<AdminEquipmentRequests />} />
-          <Route path="payroll" element={<AdminPayroll />} />
-          <Route path="users" element={<AdminUsers />} />
+          <Route path="finance" element={<Finance />} />
+          <Route path="people" element={<People />} />
+          <Route path="equipment" element={<EquipmentManagement />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="meetings" element={<AdminMeetings />} />
           <Route path="homepage" element={<AdminHomepage />} />
-             <Route path="people" element={<People />} />
+
+          {/* Old URLs now redirect to their tab, so existing links keep working */}
+          <Route path="quotations" element={<Navigate to="/admin/finance?tab=quotations" replace />} />
+          <Route path="payments" element={<Navigate to="/admin/finance?tab=payments" replace />} />
+          <Route path="payroll" element={<Navigate to="/admin/finance?tab=payroll" replace />} />
+          <Route path="freelancers" element={<Navigate to="/admin/people?tab=freelancers" replace />} />
+          <Route path="users" element={<Navigate to="/admin/people?tab=users" replace />} />
+          <Route path="equipment-requests" element={<Navigate to="/admin/equipment?tab=requests" replace />} />
         </Route>
 
         {/* Client */}

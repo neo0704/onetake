@@ -15,22 +15,9 @@ import ChangePasswordModal from '../shared/ChangePasswordModal';
 const links = [
   { to: '/admin',          icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/admin/events',   icon: CalendarDays,    label: 'Projects' },
-  {
-    label: 'Finance', icon: CreditCard,
-    children: [
-      { to: '/admin/quotations', label: 'Quotations' },
-      { to: '/admin/payments',   label: 'Payments' },
-      { to: '/admin/payroll',    label: 'Payroll' },
-    ],
-  },
-  { to: '/admin/people', icon: Users, label: 'People' },
-  {
-    label: 'Equipment', icon: Package,
-    children: [
-      { to: '/admin/equipment',          label: 'Equipment' },
-      { to: '/admin/equipment-requests', label: 'Equip. Requests' },
-    ],
-  },
+  { to: '/admin/finance', icon: CreditCard, label: 'Finance' },
+  { to: '/admin/people', icon: Users, label: 'Users' },
+  { to: '/admin/equipment', icon: Package, label: 'Equipment' },
   { to: '/admin/meetings', icon: Video,     label: 'Meetings' },
   { to: '/admin/reports',  icon: BarChart3, label: 'Reports' },
   { to: '/admin/homepage', icon: Globe,     label: 'Homepage' },
