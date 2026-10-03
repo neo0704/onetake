@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -10,6 +11,8 @@ export default function RegisterPage() {
   const [role, setRole] = useState('client'); // 'client' | 'freelancer'
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('form'); // 'form' | 'verify' | 'pending'
+  const [confirm, setConfirm] = useState('');
+  const [showPass, setShowPass] = useState(false);
   const [code, setCode] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
@@ -27,6 +30,8 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
+    if (form.password !== confirm) { toast.error('Passwords do not match'); return; }
     setLoading(true);
     try {
       const result = await register({ ...form, role });
@@ -103,7 +108,7 @@ export default function RegisterPage() {
       window.google.accounts.id.renderButton(googleBtnRef.current, {
         theme: 'filled_black',
         size: 'large',
-        width: Math.max(200, Math.min(336, Math.floor(googleBtnRef.current.parentElement.offsetWidth))),
+        width: Math.max(200, Math.min(400, Math.floor(googleBtnRef.current.parentElement.offsetWidth))),
         shape: 'pill',
         text: 'signup_with',
       });
@@ -170,17 +175,42 @@ export default function RegisterPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {[
-                  { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Firstname, Lastname' },
-                  { key: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com' },
-                  { key: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+63 900 000 0000' },
-                  { key: 'password', label: 'Password', type: 'password', placeholder: '••••••••' },
-                ].map(({ key, label, type, placeholder }) => (
+                  { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Firstname, Lastname', auto: 'name' },
+                  { key: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com', auto: 'email' },
+                  { key: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+63 900 000 0000', auto: 'tel' },
+                ].map(({ key, label, type, placeholder, auto }) => (
                   <div key={key}>
                     <label className="label">{label}</label>
-                    <input type={type} className="input" placeholder={placeholder}
+                    <input type={type} className="input" placeholder={placeholder} autoComplete={auto}
                       value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} required />
                   </div>
                 ))}
+
+                <div>
+                  <label className="label">Password</label>
+                  <div className="relative">
+                    <input type={showPass ? 'text' : 'password'} className="input pr-10" placeholder="••••••••"
+                      autoComplete="new-password" minLength={8} maxLength={128}
+                      value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
+                    <button type="button" onClick={() => setShowPass(!showPass)}
+                      aria-label={showPass ? 'Hide password' : 'Show password'}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors">
+                      {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className={`text-xs mt-1.5 ${form.password.length === 0 ? 'text-white/30' : form.password.length >= 8 ? 'text-green-500' : 'text-orange-500'}`}>
+                    {form.password.length >= 8 ? '✓ Long enough' : 'At least 8 characters — a short phrase or several words works well'}
+                  </p>
+                </div>
+                <div>
+                  <label className="label">Confirm Password</label>
+                  <input type={showPass ? 'text' : 'password'} className="input" placeholder="••••••••"
+                    autoComplete="new-password" maxLength={128}
+                    value={confirm} onChange={e => setConfirm(e.target.value)} required />
+                  {confirm.length > 0 && confirm !== form.password && (
+                    <p className="text-xs mt-1.5 text-orange-500">Passwords don't match yet</p>
+                  )}
+                </div>
                 <button type="submit" disabled={loading}
                   className="w-full py-3 mt-1 bg-white text-black font-bold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50 text-sm tracking-wider uppercase">
                   {loading ? 'Creating account...' : `Create ${role === 'client' ? 'Client' : 'Freelancer'} Account`}
@@ -195,7 +225,7 @@ export default function RegisterPage() {
               </div>
 
               {/* Google Sign-Up button gets rendered into this div by Google's script */}
-              <div className="flex justify-center w-full overflow-hidden">
+              <div className="flex justify-center w-full overflow-hidden" style={{ colorScheme: 'light' }}>
                 <div ref={googleBtnRef} />
               </div>
               <p className="text-white/25 text-[11px] text-center mt-3">

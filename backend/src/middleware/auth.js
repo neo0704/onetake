@@ -8,9 +8,16 @@ exports.protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Not authorized' });
     }
     const token = auth.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
     req.user = await User.findById(decoded.id).select('-password');
     if (!req.user) return res.status(401).json({ success: false, message: 'User not found' });
+
+    // Login blocks deactivated / unapproved accounts, but a token issued earlier
+    // would otherwise keep working until it expires. Re-check on every request so
+    // deactivating or rejecting a user cuts off their access immediately.
+    if (req.user.isActive === false || req.user.accountStatus === 'rejected' || req.user.accountStatus === 'pending') {
+      return res.status(401).json({ success: false, message: 'Your account no longer has access.' });
+    }
 
     // If the password was changed AFTER this token was issued, the token is
     // stale — reject it even though it's cryptographically still valid.

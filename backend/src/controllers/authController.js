@@ -28,13 +28,46 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const generateCode = () => String(crypto.randomInt(100000, 999999));
 const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
+// ── Password rules ─────────────────────────────────────────────────────────
+// Length matters more than symbols: min 8, generous max (bcrypt only reads the
+// first 72 bytes and huge inputs waste CPU), and a blocklist of the passwords
+// attackers try first. Returns an error message, or null if the password is OK.
+const COMMON_PASSWORDS = new Set([
+  'password', 'password1', 'password12', 'password123', 'passw0rd', '12345678', '123456789',
+  '1234567890', '11111111', '00000000', '12341234', 'qwerty123', 'qwertyuiop', 'qwerty12',
+  '1q2w3e4r', 'abc12345', 'abcd1234', 'iloveyou', 'welcome1', 'welcome123', 'letmein123',
+  'admin123', 'administrator', 'changeme', 'football1', 'monkey123', 'dragon123',
+  'onetake123', 'livetake123', 'onetake1', 'livetake1',
+]);
+const validatePassword = (pw) => {
+  if (typeof pw !== 'string' || !pw) return 'Password is required';
+  if (pw.length < 8) return 'Password must be at least 8 characters';
+  if (pw.length > 128) return 'Password must be 128 characters or fewer';
+  if (COMMON_PASSWORDS.has(pw.toLowerCase())) return 'That password is too common. Please choose one that is harder to guess.';
+  return null;
+};
+
 // ── Login lockout ──────────────────────────────────────────────────────────
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_TIME_MS = 15 * 60 * 1000; // 15 minutes
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role, phone } = req.body;
+    // Force plain strings (blocks NoSQL injection like { "email": { "$ne": null } })
+    const str = (v) => (typeof v === 'string' ? v.trim() : '');
+    const name  = str(req.body.name);
+    const email = str(req.body.email).toLowerCase();
+    const phone = str(req.body.phone);
+    const password = typeof req.body.password === 'string' ? req.body.password : '';
+    // Only these two roles can self-register. Admin accounts are never created here.
+    const role = req.body.role === 'freelancer' ? 'freelancer' : 'client';
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Name, email and password are required' });
+    }
+    const pwError = validatePassword(password);
+    if (pwError) return res.status(400).json({ success: false, message: pwError });
+
     const existing = await User.findOne({ email });
 
     // Only block if that email belongs to a fully verified (or Google-linked)
@@ -53,14 +86,14 @@ exports.register = async (req, res) => {
       // Overwrite the stale, never-verified record with the fresh attempt.
       existing.name = name;
       existing.password = password; // pre-save hook re-hashes since it's modified
-      existing.role = role || 'client';
+      existing.role = role;
       existing.phone = phone;
       existing.accountStatus = accountStatus;
       existing.verificationCode = { code, expiresAt: codeExpiry };
       user = await existing.save();
     } else {
       user = await User.create({
-        name, email, password, role: role || 'client', phone,
+        name, email, password, role, phone,
         emailVerified: false,
         accountStatus,
         verificationCode: { code, expiresAt: codeExpiry },
@@ -189,8 +222,9 @@ exports.resetPassword = async (req, res) => {
     if (!email || !code || !newPassword) {
       return res.status(400).json({ success: false, message: 'Email, code, and new password are required' });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    const newPwError = validatePassword(newPassword);
+    if (newPwError) {
+      return res.status(400).json({ success: false, message: newPwError });
     }
 
     const user = await User.findOne({ email: email.toLowerCase() });
@@ -333,6 +367,10 @@ exports.googleLogin = async (req, res) => {
       // Existing account (e.g. originally registered with a password) — link Google to it.
       // Google has already confirmed this person owns the inbox, so treat it as verified too.
       if (!user.googleId || !user.emailVerified) {
+        // If this account was never email-verified, whoever created it may not own the
+        // inbox (someone could have pre-registered this address with their own password).
+        // Drop that password now that the real owner has proven themselves via Google.
+        if (!user.emailVerified) user.password = undefined;
         user.googleId = googleId;
         user.emailVerified = true;
         if (!user.avatar && picture) user.avatar = picture;
@@ -384,8 +422,9 @@ exports.changePassword = async (req, res) => {
     if (!newPassword) {
       return res.status(400).json({ success: false, message: 'New password is required' });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    const newPwError = validatePassword(newPassword);
+    if (newPwError) {
+      return res.status(400).json({ success: false, message: newPwError });
     }
 
     const user = await User.findById(req.user.id).select('+password');
