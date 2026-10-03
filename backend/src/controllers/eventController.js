@@ -397,8 +397,25 @@ exports.getEvent = async (req, res) => {
 };
 
 // ── Update needs assessment ───────────────────────────────────────────────────
+// Once an event is marked complete (or cancelled) its assessment and team are
+// frozen. The frontend hides the controls, but this is the check that actually
+// enforces it — anyone can call the API directly.
+const FROZEN_STATUSES = ['completed_pending_balance', 'completed_paid', 'cancelled'];
+
 exports.updateNeedsAssessment = async (req, res) => {
   try {
+    // Must run BEFORE the update below, which also forces status back to 'needs_assessed'
+    const current = await Event.findById(req.params.id).select('status');
+    if (!current) return res.status(404).json({ success: false, message: 'Event not found' });
+    if (FROZEN_STATUSES.includes(current.status)) {
+      return res.status(403).json({
+        success: false,
+        message: current.status === 'cancelled'
+          ? 'This event is cancelled — the assessment can no longer be changed.'
+          : 'This event is finished — the assessment can no longer be changed.',
+      });
+    }
+
     const {
       attendees, videoType, specialRequests,
       selectedPackages,
@@ -810,6 +827,15 @@ exports.assignResources = async (req, res) => {
 
     const event = await Event.findById(req.params.id);
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+
+    if (FROZEN_STATUSES.includes(event.status)) {
+      return res.status(403).json({
+        success: false,
+        message: event.status === 'cancelled'
+          ? 'This event is cancelled — the team can no longer be changed.'
+          : 'This event is finished — the team can no longer be changed.',
+      });
+    }
 
     // Check 50% downpayment
     const verifiedPayments = await Payment.find({ event: event._id, status: 'verified' });
