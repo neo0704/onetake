@@ -860,7 +860,11 @@ export default function AdminEventDetail() {
     }
   };
 
+  // Assessment, team and equipment can no longer be changed once the event is done or cancelled
+  const assignmentLocked = ['completed_pending_balance', 'completed_paid', 'cancelled'].includes(event?.status);
+
   const saveAssessment = async (formData) => {
+    if (assignmentLocked) { toast.error('This event is finished — the assessment can no longer be changed.'); return; }
     setSaving(true);
     try {
       await api.put(`/events/${id}/needs-assessment`, formData);
@@ -888,9 +892,6 @@ export default function AdminEventDetail() {
       setSavingMessagingField(null);
     }
   };
-
-  // Team/equipment can no longer be changed once the event is done or cancelled
-  const assignmentLocked = ['completed_pending_balance', 'completed_paid', 'cancelled'].includes(event?.status);
 
   const doSaveAssignment = async () => {
     if (assignmentLocked) { toast.error('This event is finished — the team can no longer be changed.'); setShowPayWarn(false); return; }
@@ -1549,7 +1550,23 @@ export default function AdminEventDetail() {
               )}
             </div>
           )}
-          <AssessmentTab event={event} saving={saving} onSave={saveAssessment} />
+          {assignmentLocked && (
+            <div className="p-4 bg-white/5 border border-white/10 rounded-xl flex items-start gap-3">
+              <Lock className="w-5 h-5 text-white/50 flex-shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-white font-semibold text-sm">Assessment is locked</p>
+                <p className="text-white/50 text-xs mt-1">
+                  This event is {event.status === 'cancelled' ? 'cancelled' : 'finished'}, so the needs assessment can no longer be changed.
+                </p>
+              </div>
+            </div>
+          )}
+          {/* Read-only once the event is finished: inputs/buttons disabled and clicks blocked */}
+          <fieldset disabled={assignmentLocked} className="min-w-0 border-0 p-0 m-0">
+            <div className={assignmentLocked ? 'pointer-events-none select-none opacity-70' : ''}>
+              <AssessmentTab event={event} saving={saving} onSave={saveAssessment} />
+            </div>
+          </fieldset>
         </div>
       )}
 
