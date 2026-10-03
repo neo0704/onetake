@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, FileText, CheckCircle, XCircle, Send,
   Plus, Trash2, Save, Users, Wrench,
-  Calendar, ChevronDown, ChevronUp, AlertTriangle, X, Star, MessageSquare, Paperclip, Settings,
+  Calendar, ChevronDown, ChevronUp, AlertTriangle, X, Star, MessageSquare, Paperclip, Settings, Lock,
 } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingSpinner, StatusBadge, Modal } from '../../components/shared';
@@ -889,7 +889,11 @@ export default function AdminEventDetail() {
     }
   };
 
+  // Team/equipment can no longer be changed once the event is done or cancelled
+  const assignmentLocked = ['completed_pending_balance', 'completed_paid', 'cancelled'].includes(event?.status);
+
   const doSaveAssignment = async () => {
+    if (assignmentLocked) { toast.error('This event is finished — the team can no longer be changed.'); setShowPayWarn(false); return; }
     setSaving(true);
     try {
       await api.put(`/events/${id}/assign`, { assignedFreelancers });
@@ -909,6 +913,7 @@ export default function AdminEventDetail() {
     freelancers.find(f => f._id === fId)?.name || 'a team member';
 
   const saveAssignment = async () => {
+    if (assignmentLocked) { toast.error('This event is finished — the team can no longer be changed.'); return; }
     // Warn if any freelancer has no role assigned
     const missingRoles = assignedFreelancers.filter(af => !af.role || af.role.trim() === '');
     if (missingRoles.length > 0) {
@@ -975,6 +980,7 @@ export default function AdminEventDetail() {
 
   // For qty === 1 equipment: simple on/off toggle
   const toggleEquip = (fId, eqId) => {
+    if (assignmentLocked) return;
     dirtyRef.current = true;
     setAssignedFreelancers(prev => prev.map(af => {
       if (af.freelancer !== fId) return af;
@@ -987,6 +993,7 @@ export default function AdminEventDetail() {
 
   // For qty > 1 equipment: toggle an individual unit slot by index
   const toggleUnit = (fId, eqId, unitIndex) => {
+    if (assignmentLocked) return;
     dirtyRef.current = true;
     setAssignedFreelancers(prev => prev.map(af => {
       if (af.freelancer !== fId) return af;
@@ -1023,6 +1030,7 @@ export default function AdminEventDetail() {
   };
 
   const addFreelancer = (fr) => {
+    if (assignmentLocked) return;
     if (assignedFreelancers.find(af => af.freelancer === fr._id)) {
       toast.error(`${fr.name} is already in the team`); return;
     }
@@ -1032,12 +1040,14 @@ export default function AdminEventDetail() {
   };
 
   const removeFreelancer = (fId) => {
+    if (assignmentLocked) return;
     dirtyRef.current = true;
     setAssignedFreelancers(prev => prev.filter(af => af.freelancer !== fId));
     if (expandedFr === fId) setExpandedFr(null);
   };
 
   const setRole = (fId, role) => {
+    if (assignmentLocked) return;
     dirtyRef.current = true;
     setAssignedFreelancers(prev => prev.map(af => af.freelancer === fId ? { ...af, role } : af));
   };
@@ -1646,7 +1656,19 @@ export default function AdminEventDetail() {
             </div>
           )}
 
-          {paymentSummary && paymentSummary.totalAmount > 0 &&
+          {assignmentLocked && (
+            <div className="p-4 bg-white/5 border border-white/10 rounded-xl flex items-start gap-3">
+              <Lock className="w-5 h-5 text-white/50 flex-shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-white font-semibold text-sm">Team assignment is locked</p>
+                <p className="text-white/50 text-xs mt-1">
+                  This event is {event.status === 'cancelled' ? 'cancelled' : 'finished'}, so the team and equipment can no longer be changed.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!assignmentLocked && paymentSummary && paymentSummary.totalAmount > 0 &&
            (paymentSummary.totalPaid || 0) < (paymentSummary.totalAmount * 0.5) && (
             <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
@@ -1661,14 +1683,14 @@ export default function AdminEventDetail() {
             </div>
           )}
 
-          <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white/50 text-xs">
+          {!assignmentLocked && <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-white/50 text-xs">
             Click a freelancer to add them, set their role, then pick the equipment they will use. For multi-unit equipment, click to expand and select individual units.
-          </div>
+          </div>}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className={`grid grid-cols-1 gap-4 ${assignmentLocked ? '' : 'lg:grid-cols-2'}`}>
 
-            {/* Available freelancers */}
-            <div className="card">
+            {/* Available freelancers (hidden once the event is finished) */}
+            {!assignmentLocked && <div className="card">
               <h3 className="section-title mb-3">Available Freelancers</h3>
               <div className="space-y-2">
                 {freelancers.filter(fr => (fr.availability || 'available') === 'available').map(fr => (
@@ -1688,7 +1710,7 @@ export default function AdminEventDetail() {
                   <p className="text-white/30 text-sm text-center py-4">No available freelancers</p>
                 )}
               </div>
-            </div>
+            </div>}
 
             {/* Team being built */}
             <div className="card">
@@ -1718,9 +1740,11 @@ export default function AdminEventDetail() {
                           <button onClick={() => setExpandedFr(isOpen ? null : af.freelancer)} className="btn-ghost p-1">
                             {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                           </button>
-                          <button onClick={() => removeFreelancer(af.freelancer)} className="text-white/20 hover:text-red-400 p-1">
-                            <XCircle className="w-4 h-4" />
-                          </button>
+                          {!assignmentLocked && (
+                            <button onClick={() => removeFreelancer(af.freelancer)} className="text-white/20 hover:text-red-400 p-1">
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
 
                         {/* Expanded panel */}
@@ -1729,14 +1753,14 @@ export default function AdminEventDetail() {
                             {/* Role */}
                             <div>
                               <label className="label">Role / Position</label>
-                              <select className="input text-sm" value={af.role} onChange={e => setRole(af.freelancer, e.target.value)}>
+                              <select className="input text-sm" value={af.role} disabled={assignmentLocked} onChange={e => setRole(af.freelancer, e.target.value)}>
                                 <option value="">Select role...</option>
                                 {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                               </select>
                             </div>
 
-                            {/* Equipment picker */}
-                            <div>
+                            {/* Equipment picker (read-only once the event is finished) */}
+                            <fieldset disabled={assignmentLocked} className="min-w-0 border-0 p-0 m-0">
                               <label className="label">Equipment Assigned</label>
                               <div className="max-h-72 overflow-y-auto border border-white/10 rounded-xl divide-y divide-white/5">
                                 {equipment.map(eq => {
@@ -1884,7 +1908,7 @@ export default function AdminEventDetail() {
                                   );
                                 })}
                               </div>
-                            </div>
+                            </fieldset>
                           </div>
                         )}
                       </div>
@@ -1895,7 +1919,7 @@ export default function AdminEventDetail() {
             </div>
           </div>
 
-          {assignedFreelancers.length > 0 && (
+          {!assignmentLocked && assignedFreelancers.length > 0 && (
             <button onClick={saveAssignment} disabled={saving} className="btn-primary w-full justify-center py-3">
               <Save className="w-4 h-4" />
               {saving ? 'Saving...' : `Save Assignment (${assignedFreelancers.length} member${assignedFreelancers.length !== 1 ? 's' : ''})`}
