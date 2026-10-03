@@ -977,6 +977,45 @@ exports.addComment = async (req, res) => {
   }
 };
 
+// ── Notify the other side of a direct message ────────────────────────────────
+// Works out who should be told based on the thread and who sent it.
+//   client_admin        : client → all admins   | admin → the client
+//   admin_freelancer    : admin  → that freelancer | freelancer → all admins
+//   freelancer_client   : client → that freelancer | freelancer → the client
+//   freelancer_freelancer: sender → the other freelancer
+// Never throws — a notification problem must not make the message itself fail.
+const notifyMessageRecipients = async ({ event, convoType, fId, sender, content, hasAttachments }) => {
+  try {
+    const preview = (content || '').trim()
+      ? ((content.trim().length > 80) ? content.trim().slice(0, 80) + '…' : content.trim())
+      : 'Sent an attachment';
+    const base = {
+      type:    'message_received',
+      title:   `New message from ${sender.name}`,
+      message: `${event.eventName}: ${preview}`,
+      data:    { eventId: event._id, threadType: convoType, freelancerId: fId },
+      sender:  sender.id,
+    };
+    const clientId = event.client?._id?.toString() || event.client?.toString();
+
+    const toAdmins     = () => notifyAdmins({ ...base, link: `/admin/events/${event._id}` });
+    const toClient     = () => sendNotification({ ...base, recipient: clientId, link: `/client/events/${event._id}` });
+    const toFreelancer = (id) => sendNotification({ ...base, recipient: id, link: `/freelancer/events/${event._id}` });
+
+    if (convoType === 'client_admin') {
+      if (sender.role === 'client') await toAdmins(); else await toClient();
+    } else if (convoType === 'admin_freelancer') {
+      if (sender.role === 'admin') await toFreelancer(fId); else await toAdmins();
+    } else if (convoType === 'freelancer_client') {
+      if (sender.role === 'client') await toFreelancer(fId); else await toClient();
+    } else if (convoType === 'freelancer_freelancer') {
+      await toFreelancer(fId); // fId is the other freelancer
+    }
+  } catch (err) {
+    console.log('Message notify err:', err.message);
+  }
+};
+
 // ── Send a message into one of the three private thread types ────────────────
 // Body: { content, threadType: 'admin' | 'client' | 'freelancer', freelancerId? }
 // - client sending: threadType 'admin' (→ client_admin) or 'freelancer' + freelancerId (→ freelancer_client)
@@ -1114,6 +1153,12 @@ exports.sendMessage = async (req, res) => {
     };
     convo.messages.push(message);
     await event.save();
+
+    await notifyMessageRecipients({
+      event, convoType, fId,
+      sender: { id: req.user.id, name: req.user.name, role: req.user.role },
+      content, hasAttachments: attachments.length > 0,
+    });
 
     try {
       getIO().to(`event_${event._id}`).emit('new_message', {
