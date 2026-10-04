@@ -1,22 +1,37 @@
 const express      = require('express');
 const router       = express.Router();
 const multer       = require('multer');
-const path         = require('path');
-const fs           = require('fs');
+const cloudinary   = require('cloudinary').v2;
 const DamageReport = require('../models/DamageReport');
 const Equipment    = require('../models/Equipment');
 const { protect, authorize }              = require('../middleware/auth');
 const { sendNotification, notifyAdmins } = require('../services/notificationService');
 
-// Multer for damage photos
-const uploadDir = path.join(__dirname, '../../uploads/damage');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename:    (req, file, cb) => cb(null, `dmg-${Date.now()}-${file.originalname.replace(/\s/g,'_')}`),
+// ── Cloudinary (permanent image storage) ───────────────────────────────────
+// Uses the same CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
+// env vars already configured for uploadRoute.js / paymentController.js / users.js.
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => file.mimetype.startsWith('image/') ? cb(null,true) : cb(new Error('Images only')) });
+
+// Keep the file in memory, then send it straight to Cloudinary.
+// Nothing is written to the server's disk (Render wipes it on every restart).
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => file.mimetype.startsWith('image/') ? cb(null,true) : cb(new Error('Images only')),
+});
+
+const uploadToCloudinary = (buffer, folder) =>
+  new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: `onetake/${folder}`, resource_type: 'image' },
+      (err, result) => (err ? reject(err) : resolve(result))
+    );
+    stream.end(buffer);
+  });
 
 // GET all damage reports (admin)
 router.get('/', protect, authorize('admin'), async (req, res) => {
@@ -67,7 +82,14 @@ router.post('/', protect, authorize('admin'), upload.array('photos', 5), async (
     if (!eventId || !equipmentId || !freelancerId)
       return res.status(400).json({ success: false, message: 'eventId, equipmentId, freelancerId required' });
 
-    const photos = (req.files || []).map(f => `/uploads/damage/${f.filename}`);
+    if ((req.files || []).length > 0 &&
+        (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET)) {
+      return res.status(500).json({ success: false, message: 'Image storage is not configured on the server' });
+    }
+
+    const photos = await Promise.all(
+      (req.files || []).map(async f => (await uploadToCloudinary(f.buffer, 'damage')).secure_url)
+    );
 
     const report = await DamageReport.create({
       event: eventId, equipment: equipmentId, freelancer: freelancerId,
