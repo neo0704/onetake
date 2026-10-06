@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { LoadingSpinner, EmptyState, StatusBadge, PageHeader } from '../../components/shared';
 import ServiceBadges from '../../components/shared/ServiceBadges';
 import { formatDate } from '../../utils/helpers';
+import { ListSkeleton } from '../../components/shared/Skeletons';
 
 const STATUS_FILTERS = [
   'all','inquiry_received','inquiry_accepted','needs_assessed','quotation_sent',
@@ -142,7 +143,7 @@ export default function AdminEvents() {
         </div>
       </div>
 
-      {loading ? <LoadingSpinner /> : events.length === 0 ? (
+      {loading ? <ListSkeleton rows={5} /> : events.length === 0 ? (
         <EmptyState icon={Calendar} title="No projects found"
           description="Projects will appear here once clients submit inquiries" />
 

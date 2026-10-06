@@ -50,19 +50,45 @@ import VideoCall from './pages/VideoCall';
 import NotFound from './pages/NotFound';
 import HomePage from './pages/HomePage';
 
+// Full-page skeleton shown while the login check runs (sidebar + header + content)
+const Bone = ({ className = '' }) => (
+  <div className={`animate-pulse rounded-md bg-white/10 ${className}`} />
+);
+
+const AppShellSkeleton = () => (
+  <div className="flex h-screen bg-[#0f0f1a]" aria-busy="true" aria-label="Loading">
+    {/* Sidebar (hidden on small screens) */}
+    <aside className="hidden lg:flex w-64 shrink-0 flex-col gap-3 p-4 border-r border-white/10">
+      <Bone className="h-9 w-32 mb-4" />
+      {[...Array(7)].map((_, i) => <Bone key={i} className="h-10 w-full" />)}
+    </aside>
+
+    <div className="flex-1 min-w-0 flex flex-col">
+      {/* Top bar */}
+      <header className="flex items-center justify-between p-4 border-b border-white/10">
+        <Bone className="h-6 w-40" />
+        <Bone className="h-9 w-9 rounded-full" />
+      </header>
+
+      {/* Content */}
+      <main className="flex-1 overflow-hidden p-4 sm:p-6 space-y-6">
+        <div className="space-y-2">
+          <Bone className="h-8 w-48" />
+          <Bone className="h-4 w-64" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[...Array(4)].map((_, i) => <Bone key={i} className="h-24" />)}
+        </div>
+        <Bone className="h-64 w-full" />
+      </main>
+    </div>
+  </div>
+);
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, token, loading } = useAuthStore();
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#0f0f1a]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="text-white/40 text-sm">Loading OneTake...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <AppShellSkeleton />;
 
   if (!token || !user) return <Navigate to="/login" replace />;
 

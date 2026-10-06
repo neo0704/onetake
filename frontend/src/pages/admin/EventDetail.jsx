@@ -14,6 +14,7 @@ import ProjectTimeline   from '../../components/ProjectTimeline';
 import DamageReportModal from '../../components/DamageReportModal';
 import { formatDate, formatDateTime, formatCurrency, STATUS_LABELS } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { DetailPageSkeleton } from '../../components/shared/Skeletons';
 
 // ── Derive the backend origin from the axios base URL so that relative
 //    upload paths (e.g. /uploads/checkin/photo.jpg) resolve correctly
@@ -1114,7 +1115,7 @@ export default function AdminEventDetail() {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <DetailPageSkeleton />;
   if (!event)  return <div className="text-white/50 p-8">Event not found</div>;
 
   const tabs       = getTabs(event.status);

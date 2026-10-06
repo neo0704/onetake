@@ -8,6 +8,7 @@ import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { TabbedGridPageSkeleton, ListPageSkeleton } from '../../components/shared/Skeletons';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const AVAIL_COLORS = {
@@ -689,7 +690,7 @@ export default function AdminEquipment() {
 
   const openDamages = damages.filter(d => d.status !== 'resolved').length;
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <TabbedGridPageSkeleton />;
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -1268,7 +1269,7 @@ function EquipmentUsageHistory({ equipment, damages }) {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ListPageSkeleton filters={false} />;
 
   const usageRecords = [];
   events.forEach(ev => {

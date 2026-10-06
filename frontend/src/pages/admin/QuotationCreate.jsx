@@ -7,6 +7,7 @@ import { calcQuotationValidUntil, toInputDate, formatDeadline } from '../../util
 import { RATE_CARD, PACKAGE_MAP } from '../../utils/rateCard';
 import { LoadingSpinner } from '../../components/shared';
 import toast from 'react-hot-toast';
+import { FormPageSkeleton } from '../../components/shared/Skeletons';
 
 const DEFAULT_CONDITIONS = [
   'Upon receipt of this quotation, the client agrees to keep the rates confidential and shall not disclose any information to third parties except those directly involved in the agreement.',
@@ -271,7 +272,7 @@ export default function AdminQuotationCreate() {
     } finally { setSaving(false); submittingRef.current = false; }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <FormPageSkeleton />;
 
   return (
     <>

@@ -4,6 +4,7 @@ import api from '../../services/api';
 import { LoadingSpinner, PageHeader, Modal } from '../../components/shared';
 import { formatDate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { TablePageSkeleton } from '../../components/shared/Skeletons';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -48,7 +49,7 @@ export default function AdminUsers() {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <TablePageSkeleton />;
 
   const pendingCount = users.filter(u => u.role === 'freelancer' && u.accountStatus === 'pending').length;
   const displayedUsers = pendingOnly

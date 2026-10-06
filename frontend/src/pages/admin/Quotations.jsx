@@ -4,6 +4,7 @@ import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader } from '../../components/shared';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { ListPageSkeleton } from '../../components/shared/Skeletons';
 
 
 // Resolves a backend file path to a full URL
@@ -510,7 +511,7 @@ export default function AdminQuotations() {
     ? quotations
     : quotations.filter(q => q.status === statusFilter);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ListPageSkeleton />;
 
   return (
     <div className="space-y-5 animate-fade-in">

@@ -5,6 +5,7 @@ import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/
 import { formatDate, formatCurrency } from '../../utils/helpers';
 import { payrollPeriodDefaults, payrollPeriodConstraints, toInputDate } from '../../utils/dateHelpers';
 import toast from 'react-hot-toast';
+import { StatsListPageSkeleton } from '../../components/shared/Skeletons';
 
 const STATUS = {
   draft:   { label: 'Draft',   cls: 'bg-gray-500/20  text-gray-400'  },
@@ -314,7 +315,7 @@ export default function AdminPayroll() {
     setShowEdit(true);
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <StatsListPageSkeleton />;
 
   return (
     <div className="space-y-5 animate-fade-in">

@@ -3,6 +3,7 @@ import { Users, Plus, X, CheckCircle, Phone, MapPin, Calendar, Mail } from 'luci
 import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
 import toast from 'react-hot-toast';
+import { CardGridPageSkeleton } from '../../components/shared/Skeletons';
 
 const AVAIL_CONFIG = {
   available:   { label: 'Available',   cls: 'bg-green-500/20  text-green-400  border-green-500/40'  },
@@ -215,7 +216,7 @@ export default function AdminFreelancers() {
     ? freelancers
     : freelancers.filter(f => (f.availability || 'available') === availFilter);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <CardGridPageSkeleton />;
 
   return (
     <div className="space-y-5 animate-fade-in">

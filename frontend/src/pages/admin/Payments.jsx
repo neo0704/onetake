@@ -9,6 +9,7 @@ import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/
 import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { ListSkeleton, CardGridSkeleton } from '../../components/shared/Skeletons';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const getBackendUrl = (filePath) => {
@@ -202,7 +203,7 @@ export default function AdminPayments() {
       ════════════════════════════════════════════════════════════════════ */}
       {tab === 'payments' && (
         <>
-          {paymentsLoading ? <LoadingSpinner /> : (
+          {paymentsLoading ? <ListSkeleton rows={4} /> : (
             <>
               {payments.filter(p => p.status === 'pending').length > 0 && (
                 <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
@@ -339,7 +340,7 @@ export default function AdminPayments() {
       ════════════════════════════════════════════════════════════════════ */}
       {tab === 'qr' && (
         <>
-          {qrLoading ? <LoadingSpinner /> : (
+          {qrLoading ? <CardGridSkeleton cards={3} /> : (
             <>
               {qrs.filter(q => q.isActive).length === 0 && (
                 <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">

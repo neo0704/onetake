@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import api from '../../services/api';
 import { LoadingSpinner, PageHeader, StatCard } from '../../components/shared';
 import { formatCurrency, formatDate } from '../../utils/helpers';
+import { ReportsSkeleton } from '../../components/shared/Skeletons';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b'];
 
@@ -36,7 +37,7 @@ export default function AdminReports() {
   };
   useEffect(() => { fetch(); }, []);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ReportsSkeleton />;
   const s = financial?.summary || {};
 
   const chartData = [

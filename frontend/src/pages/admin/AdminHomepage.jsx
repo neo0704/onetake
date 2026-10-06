@@ -8,6 +8,7 @@ import {
 import api from '../../services/api';
 import { PageHeader, Modal } from '../../components/shared';
 import toast from 'react-hot-toast';
+import { CardGridPageSkeleton } from '../../components/shared/Skeletons';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -305,11 +306,7 @@ export default function AdminHomepage() {
   const getCover = (proj) => toDisplay(proj.coverImage || proj.images?.[0]?.url || null);
   const ytThumb  = getYTThumb(videoForm.url);
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  if (loading) return <CardGridPageSkeleton />;
 
   return (
     <div className="space-y-5 animate-fade-in">

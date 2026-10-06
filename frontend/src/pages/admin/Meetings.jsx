@@ -8,6 +8,7 @@ import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
 import { formatDateTime, formatDate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { ListPageSkeleton } from '../../components/shared/Skeletons';
 
 // datetime-local inputs need "YYYY-MM-DDTHH:mm" in the *local* timezone.
 // Slicing a raw UTC ISO string would silently shift the displayed time by
@@ -555,7 +556,7 @@ export default function AdminMeetings() {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ListPageSkeleton filters={false} action />;
 
   const requests = meetings.filter(m => m.status === 'requested');
   // Manually-reactivated meetings carry status 'scheduled' again, so they

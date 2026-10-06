@@ -5,6 +5,7 @@ import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/
 import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import { formatDate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { ListPageSkeleton } from '../../components/shared/Skeletons';
 
 export default function AdminEquipmentRequests() {
   const [requests,     setRequests]     = useState([]);
@@ -77,7 +78,7 @@ export default function AdminEquipmentRequests() {
     rejected: 'bg-red-500/20 text-red-400',
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ListPageSkeleton />;
 
   return (
     <div className="space-y-5 animate-fade-in">
