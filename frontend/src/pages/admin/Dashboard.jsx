@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarDays, Users, TrendingUp, Clock, CheckCircle, AlertCircle, CreditCard, UserCheck } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import api from '../../services/api';
-import { LoadingSpinner, StatCard, StatusBadge } from '../../components/shared';
+import { StatCard, StatusBadge } from '../../components/shared';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 
 const COLORS = ['#e94560', '#3b82f6', '#f59e0b', '#8b5cf6', '#22c55e'];
@@ -20,6 +20,80 @@ function ChartTooltip({ active, payload, label }) {
   );
 }
 
+// ---- Skeleton helpers (same grid/card layout as the real dashboard) ----
+function Bone({ className = '' }) {
+  return <div className={`animate-pulse rounded-md bg-white/10 ${className}`} />;
+}
+
+function StatCardSkeleton() {
+  return (
+    <div className="card flex items-center gap-3">
+      <Bone className="w-11 h-11 rounded-lg shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Bone className="h-3 w-24" />
+        <Bone className="h-6 w-16" />
+      </div>
+    </div>
+  );
+}
+
+function ListRowSkeleton() {
+  return (
+    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/5 border border-white/10">
+      <div className="flex-1 space-y-2">
+        <Bone className="h-4 w-2/3" />
+        <Bone className="h-3 w-1/2" />
+      </div>
+      <Bone className="h-6 w-16 rounded-full" />
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Loading dashboard">
+      <div className="space-y-2">
+        <Bone className="h-8 w-48" />
+        <Bone className="h-4 w-64" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        {[...Array(3)].map((_, i) => <StatCardSkeleton key={i} />)}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="card lg:col-span-2 min-w-0">
+          <Bone className="h-5 w-36 mb-4" />
+          <Bone className="h-[200px] sm:h-[220px] w-full" />
+        </div>
+        <div className="card min-w-0">
+          <Bone className="h-5 w-40 mb-4" />
+          <div className="flex justify-center">
+            <Bone className="h-[156px] w-[156px] rounded-full" />
+          </div>
+          <div className="mt-4 space-y-2">
+            {[...Array(3)].map((_, i) => <Bone key={i} className="h-3 w-full" />)}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {[0, 1].map(i => (
+          <div key={i} className="card">
+            <Bone className="h-5 w-36 mb-4" />
+            <div className="space-y-3">
+              {[...Array(3)].map((_, j) => <ListRowSkeleton key={j} />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,7 +104,7 @@ export default function AdminDashboard() {
     api.get('/reports/dashboard').then(({ data }) => { setData(data); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <LoadingSpinner size="lg" />;
+  if (loading) return <DashboardSkeleton />;
 
   const s = data?.stats || {};
   const eventStatusData = [
