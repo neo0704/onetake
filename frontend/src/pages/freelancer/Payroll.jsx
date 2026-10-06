@@ -7,6 +7,7 @@ import api from '../../services/api';
 import { LoadingSpinner, EmptyState } from '../../components/shared';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 import useAuthStore from '../../store/authStore';
+import { PayrollSkeleton } from '../../components/shared/Skeletons';
 
 const STATUS_CONFIG = {
   draft:   { label: 'Processing',  icon: Clock,         color: 'text-gray-400',   bg: 'bg-gray-500/10',   border: 'border-gray-500/20',   dot: 'bg-gray-400' },
@@ -168,7 +169,7 @@ export default function FreelancerPayroll() {
     fetchPayrolls();
   }, []);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <PayrollSkeleton />;
 
   const filtered = filter === 'all' 
     ? payrolls 

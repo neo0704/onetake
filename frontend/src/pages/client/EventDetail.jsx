@@ -8,6 +8,7 @@ import { formatDate, formatDateTime, formatCurrency } from '../../utils/helpers'
 import { getSocket } from '../../services/socket';
 import ProjectTimeline from '../../components/ProjectTimeline';
 import toast from 'react-hot-toast';
+import { DetailPageSkeleton } from '../../components/shared/Skeletons';
 
 // ── Derive the backend origin from the axios base URL so that relative
 //    upload paths (e.g. /uploads/messages/file.jpg) resolve correctly
@@ -892,7 +893,7 @@ export default function ClientEventDetail() {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <DetailPageSkeleton />;
   if (!event) return <div className="text-white/50">Event not found</div>;
 
   const canRequestCancellation = CANCELLABLE_STATUSES.includes(event.status);

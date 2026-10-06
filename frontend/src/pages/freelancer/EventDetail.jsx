@@ -8,6 +8,7 @@ import { formatDate, formatDateTime } from '../../utils/helpers';
 import useAuthStore from '../../store/authStore';
 import { getSocket } from '../../services/socket';
 import toast from 'react-hot-toast';
+import { DetailPageSkeleton } from '../../components/shared/Skeletons';
 
 // ── Derive the backend origin from the axios base URL so that relative
 //    upload paths (e.g. /uploads/messages/file.jpg) resolve correctly
@@ -623,7 +624,7 @@ export default function FreelancerEventDetail() {
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <DetailPageSkeleton />;
   if (!event)  return <div className="text-white/50 p-8">Project not found</div>;
 
   const myAssignment = (event.assignedFreelancers || []).find(af => {

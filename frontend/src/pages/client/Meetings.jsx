@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
 import { formatDateTime } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { MeetingsPageSkeleton } from '../../components/shared/Skeletons';
 
 // datetime-local inputs need "YYYY-MM-DDTHH:mm" in the *local* timezone.
 function toLocalInputValue(dateValue) {
@@ -194,7 +195,7 @@ export default function ClientMeetings() {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <MeetingsPageSkeleton />;
 
   const upcoming = meetings.filter(m => ['requested', 'scheduled', 'ongoing'].includes(m.status));
   // 'expired' lives here too now — it's history, not an active request, and

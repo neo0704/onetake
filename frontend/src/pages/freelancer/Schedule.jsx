@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { LoadingSpinner } from '../../components/shared';
 import { formatDate } from '../../utils/helpers';
 import useAuthStore from '../../store/authStore';
+import { ScheduleSkeleton } from '../../components/shared/Skeletons';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -69,7 +70,7 @@ export default function FreelancerSchedule() {
     .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))
     .slice(0, 15);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ScheduleSkeleton />;
 
   return (
     <div className="space-y-6 animate-fade-in">

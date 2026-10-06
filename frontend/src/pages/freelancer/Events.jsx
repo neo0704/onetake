@@ -5,6 +5,7 @@ import useAuthStore from '../../store/authStore';
 import api from '../../services/api';
 import { LoadingSpinner, EmptyState, StatusBadge, PageHeader } from '../../components/shared';
 import { formatDate } from '../../utils/helpers';
+import { ListPageSkeleton } from '../../components/shared/Skeletons';
 
 export default function FreelancerEvents() {
   const [events, setEvents] = useState([]);
@@ -16,7 +17,7 @@ export default function FreelancerEvents() {
     api.get('/events').then(r => { setEvents(r.data.events); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ListPageSkeleton filters={false} />;
 
   return (
     <div className="space-y-5 animate-fade-in">

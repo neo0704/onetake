@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
 import { formatDateTime } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { MeetingsPageSkeleton } from '../../components/shared/Skeletons';
 
 // NOTE: aligned to the actual Meeting schema statuses ('ongoing'/'done'),
 // not 'in_progress'/'completed' — those are never actually set by the
@@ -100,7 +101,7 @@ export default function FreelancerMeetings() {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <MeetingsPageSkeleton sectionTitle={false} />;
 
   return (
     <div className="space-y-5 animate-fade-in">

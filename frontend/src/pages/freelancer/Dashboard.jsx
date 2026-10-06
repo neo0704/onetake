@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { LoadingSpinner, StatCard, StatusBadge, EmptyState } from '../../components/shared';
 import { formatDate } from '../../utils/helpers';
 import useAuthStore from '../../store/authStore';
+import { ClientDashboardSkeleton } from '../../components/shared/Skeletons';
 
 export default function FreelancerDashboard() {
 const [events, setEvents] = useState([]);
@@ -49,7 +50,7 @@ const [events, setEvents] = useState([]);
     }).catch(() => setLoading(false));
   }, [user?._id]);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ClientDashboardSkeleton />;
 
   const upcoming = events.filter(e => ['confirmed','assigned'].includes(e.status));
   const inProgress = events.filter(e => e.status === 'in_progress');

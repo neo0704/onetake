@@ -6,6 +6,7 @@ import api from '../../services/api';
 import { LoadingSpinner, StatCard, StatusBadge } from '../../components/shared';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 import useAuthStore from '../../store/authStore';
+import { ClientDashboardSkeleton } from '../../components/shared/Skeletons';
 
 export default function ClientDashboard() {
   const [events, setEvents] = useState([]);
@@ -17,7 +18,7 @@ export default function ClientDashboard() {
     api.get('/events').then(r => { setEvents(r.data.events); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ClientDashboardSkeleton />;
 
   const active = events.filter(e => ['confirmed','assigned','in_progress'].includes(e.status));
   const completed = events.filter(e => ['completed_paid','completed_pending_balance'].includes(e.status));

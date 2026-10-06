@@ -8,6 +8,7 @@ import useAuthStore from '../../store/authStore';
 import { LoadingSpinner } from '../../components/shared';
 import ChangePasswordModal from '../../components/shared/ChangePasswordModal';
 import toast from 'react-hot-toast';
+import { ProfileSkeleton } from '../../components/shared/Skeletons';
 
 const SKILLS = [
   'Camera Operator', 'Videographer', 'Photographer',
@@ -168,7 +169,7 @@ export default function FreelancerProfile() {
     } finally { setSaving(false); }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ProfileSkeleton />;
 
   const avCfg = AVAIL_OPTIONS.find(a => a.value === (profile?.availability || 'available'));
   // New avatars are absolute Cloudinary URLs (https://res.cloudinary.com/...) and are

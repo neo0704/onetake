@@ -4,6 +4,7 @@ import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { ListPageSkeleton } from '../../components/shared/Skeletons';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 const getBackendUrl = (filePath) => {
@@ -231,7 +232,7 @@ export default function ClientPayments() {
   // Dynamic QR from backend
   const { qr: activeQR, loading: qrLoading } = usePaymentQR(showQR ? form.method : null);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ListPageSkeleton filters={false} />;
 
   return (
     <div className="space-y-5 animate-fade-in">

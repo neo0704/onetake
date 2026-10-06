@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, ShieldAlert, CheckCircle2, Clock, Wrench, Calendar, ChevronDown, ChevronUp, ImageIcon } from 'lucide-react';
 import api from '../../services/api';
+import { DamageReportsSkeleton } from '../../components/shared/Skeletons';
 
 const DAMAGE_COLOR = {
   minor:     { bg: 'bg-yellow-500/10', text: 'text-yellow-400', border: 'border-yellow-500/30' },
@@ -189,13 +190,7 @@ export default function FreelancerDamageReports() {
     .filter(r => r.deductFromPayroll)
     .reduce((s, r) => s + (r.deductionAmount || 0), 0);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <DamageReportsSkeleton />;
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">

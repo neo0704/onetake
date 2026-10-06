@@ -6,7 +6,7 @@ import React from 'react';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function Bone({ className = '' }) {
-  return <div className={`animate-pulse rounded-md bg-white/10 ${className}`} />;
+  return <div className={`animate-pulse rounded-md bg-white/[0.16] ${className}`} />;
 }
 
 const times = (n) => Array.from({ length: n }, (_, i) => i);
@@ -267,6 +267,272 @@ export function SettingsSkeleton() {
           </div>
         </div>
         <Bone className="h-6 w-12 rounded-full shrink-0" />
+      </div>
+    </div>
+  );
+}
+
+// ── Client-side additions ────────────────────────────────────────────────────
+
+// Stat cards with an icon block (same look as <StatCard />)
+export function StatCardsSkeleton({ count = 4 }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {times(count).map(i => (
+        <div key={i} className="card flex items-center gap-3">
+          <Bone className="w-12 h-12 rounded-xl shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Bone className="h-3 w-24" />
+            <Bone className="h-6 w-12" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Rows that sit inside a card (no card of their own)
+export function InnerRowsSkeleton({ rows = 4 }) {
+  return (
+    <div className="space-y-3">
+      {times(rows).map(i => (
+        <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/5">
+          <div className="flex-1 space-y-2">
+            <Bone className="h-4 w-1/2" />
+            <Bone className="h-3 w-2/3" />
+          </div>
+          <Bone className="h-6 w-20 rounded-full shrink-0" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Client dashboard: greeting, 4 stat cards, "My Projects" card
+export function ClientDashboardSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Loading dashboard">
+      <div className="space-y-2">
+        <Bone className="h-8 w-56" />
+        <Bone className="h-3.5 w-64 max-w-full" />
+      </div>
+      <StatCardsSkeleton />
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <Bone className="h-5 w-32" />
+          <Bone className="h-4 w-16" />
+        </div>
+        <InnerRowsSkeleton rows={4} />
+      </div>
+    </div>
+  );
+}
+
+// Meetings: header + button, section title, 2-column meeting cards
+export function MeetingsPageSkeleton({ sectionTitle = true }) {
+  return (
+    <div className="space-y-6">
+      <HeaderSkeleton withAction />
+      <div>
+        {sectionTitle && <Bone className="h-5 w-44 mb-4" />}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {times(4).map(i => (
+            <div key={i} className="card space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 flex-1">
+                  <Bone className="w-10 h-10 rounded-xl shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Bone className="h-4 w-2/3" />
+                    <Bone className="h-3 w-1/3" />
+                  </div>
+                </div>
+                <Bone className="h-6 w-20 rounded-full shrink-0" />
+              </div>
+              <div className="flex gap-3">
+                <Bone className="h-3.5 w-32" />
+                <Bone className="h-3.5 w-16" />
+              </div>
+              <Bone className="h-10 w-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Freelancer-side additions ────────────────────────────────────────────────
+
+// Payroll: hero banner + payslip cards, sidebar with overview + filters
+export function PayrollSkeleton() {
+  return (
+    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6" aria-busy="true" aria-label="Loading payroll">
+      <div className="space-y-6 min-w-0">
+        <div className="card flex items-center gap-3 p-6">
+          <Bone className="w-12 h-12 rounded-2xl shrink-0" />
+          <div className="space-y-2">
+            <Bone className="h-6 w-36" />
+            <Bone className="h-3.5 w-52 max-w-full" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          {times(3).map(i => (
+            <div key={i} className="card space-y-4">
+              <div className="flex justify-between gap-3">
+                <div className="flex-1 space-y-2">
+                  <Bone className="h-3 w-32" />
+                  <Bone className="h-5 w-2/3" />
+                  <Bone className="h-3 w-24" />
+                </div>
+                <div className="space-y-2 flex flex-col items-end">
+                  <Bone className="h-3 w-14" />
+                  <Bone className="h-7 w-28" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                {times(3).map(j => <Bone key={j} className="h-12" />)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-4">
+        <div className="card space-y-3">
+          <Bone className="h-3 w-20" />
+          {times(3).map(i => (
+            <div key={i} className="flex justify-between">
+              <Bone className="h-4 w-24" />
+              <Bone className="h-4 w-20" />
+            </div>
+          ))}
+        </div>
+        <div className="card hidden lg:block space-y-2">
+          <Bone className="h-3 w-12 mb-1" />
+          {times(4).map(i => <Bone key={i} className="h-9 w-full" />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Schedule: heading, calendar card (7-col grid), sidebar with upcoming cards
+export function ScheduleSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Loading schedule">
+      <div className="space-y-2">
+        <Bone className="h-8 w-44" />
+        <Bone className="h-3.5 w-72 max-w-full" />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 card">
+          <div className="flex items-center justify-between mb-4">
+            <Bone className="h-9 w-9" />
+            <Bone className="h-6 w-40" />
+            <Bone className="h-9 w-9" />
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {times(7).map(i => <Bone key={`h${i}`} className="h-4 w-8 mx-auto mb-1" />)}
+            {times(35).map(i => <Bone key={i} className="aspect-square rounded-xl opacity-60" />)}
+          </div>
+        </div>
+        <div className="card space-y-3">
+          <Bone className="h-5 w-40 mb-1" />
+          {times(3).map(i => (
+            <div key={i} className="flex gap-3 p-3 rounded-xl bg-white/5">
+              <Bone className="w-[46px] h-14 rounded-xl shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Bone className="h-4 w-3/4" />
+                <Bone className="h-3 w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Damage reports: heading, 4 small counters, filter pills, report rows
+export function DamageReportsSkeleton() {
+  return (
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6" aria-busy="true" aria-label="Loading reports">
+      <div className="space-y-2">
+        <Bone className="h-7 w-48" />
+        <Bone className="h-3.5 w-64 max-w-full" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {times(4).map(i => (
+          <div key={i} className="card flex flex-col items-center gap-2 !p-3">
+            <Bone className="h-7 w-10" />
+            <Bone className="h-3 w-16" />
+          </div>
+        ))}
+      </div>
+      <FilterPillsSkeleton />
+      <div className="space-y-3">
+        {times(3).map(i => (
+          <div key={i} className="card flex items-start gap-4">
+            <Bone className="w-10 h-10 rounded-lg shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Bone className="h-4 w-1/2" />
+              <Bone className="h-3 w-3/4" />
+            </div>
+            <Bone className="h-4 w-4 shrink-0" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Freelancer profile: hero card, then 2/3 info cards + 1/3 side cards
+export function ProfileSkeleton() {
+  return (
+    <div className="space-y-5 max-w-6xl" aria-busy="true" aria-label="Loading profile">
+      <div className="card flex items-start gap-4">
+        <Bone className="w-16 h-16 rounded-2xl shrink-0" />
+        <div className="flex-1 space-y-2.5">
+          <Bone className="h-6 w-48" />
+          <Bone className="h-3.5 w-56 max-w-full" />
+          <div className="flex gap-2">
+            <Bone className="h-6 w-24 rounded-full" />
+            <Bone className="h-6 w-20 rounded-full" />
+          </div>
+        </div>
+        <Bone className="h-9 w-24 shrink-0" />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+        <div className="lg:col-span-2 space-y-5">
+          <div className="card">
+            <Bone className="h-5 w-44 mb-4" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+              {times(6).map(i => (
+                <div key={i} className="space-y-1.5">
+                  <Bone className="h-3 w-16" />
+                  <Bone className="h-4 w-3/4" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <Bone className="h-5 w-40 mb-3" />
+            <div className="flex flex-wrap gap-2">
+              {times(5).map(i => <Bone key={i} className="h-7 w-20 rounded-full" />)}
+            </div>
+          </div>
+        </div>
+        <div className="space-y-5">
+          <div className="card">
+            <Bone className="h-5 w-32 mb-3" />
+            <div className="grid grid-cols-2 gap-2">
+              {times(4).map(i => <Bone key={i} className="h-10" />)}
+            </div>
+          </div>
+          <div className="card space-y-3">
+            <Bone className="h-5 w-24" />
+            <Bone className="h-8 w-32" />
+          </div>
+        </div>
       </div>
     </div>
   );

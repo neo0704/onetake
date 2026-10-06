@@ -5,6 +5,7 @@ import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/
 import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import { formatDate, formatCurrency } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { ListPageSkeleton } from '../../components/shared/Skeletons';
 
 // Resolves a backend file path (e.g. /uploads/...) to a full URL
 const getBackendUrl = (filePath) => {
@@ -450,7 +451,7 @@ export default function ClientQuotations() {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ListPageSkeleton filters={false} />;
 
   return (
     <div className="space-y-5 animate-fade-in">

@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { LoadingSpinner, EmptyState, StatusBadge, PageHeader } from '../../components/shared';
 import ServiceBadges from '../../components/shared/ServiceBadges';
 import { formatDate } from '../../utils/helpers';
+import { ListPageSkeleton } from '../../components/shared/Skeletons';
 
 export default function ClientEvents() {
   const [events, setEvents] = useState([]);
@@ -15,7 +16,7 @@ export default function ClientEvents() {
     api.get('/events').then(r => { setEvents(r.data.events); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ListPageSkeleton filters={false} action />;
 
   return (
     <div className="space-y-5 animate-fade-in">

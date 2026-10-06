@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Mail, Loader2 } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import useAuthStore from '../../store/authStore'; // adjust path if needed
+import { Bone } from '../../components/shared/Skeletons';
 
 export default function ClientProfile() {
   const { token, user } = useAuthStore(); // adjust if your store exposes these differently
@@ -57,8 +58,16 @@ export default function ClientProfile() {
         <h3 className="section-title mb-4">Notifications</h3>
 
         {loading ? (
-          <div className="flex items-center justify-center py-6 text-white/40">
-            <Loader2 className="w-5 h-5 animate-spin" />
+          <div className="flex items-start justify-between gap-3" aria-busy="true">
+            <div className="flex gap-2.5 flex-1">
+              <Bone className="w-8 h-8 rounded-lg shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Bone className="h-4 w-36" />
+                <Bone className="h-3 w-full max-w-sm" />
+                <Bone className="h-3 w-2/3 max-w-sm" />
+              </div>
+            </div>
+            <Bone className="h-6 w-11 rounded-full shrink-0" />
           </div>
         ) : enabled === null ? (
           <p className="text-red-400 text-sm">{error || 'Could not load your preferences.'}</p>
