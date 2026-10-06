@@ -22,13 +22,13 @@ function ChartTooltip({ active, payload, label }) {
 
 // ---- Skeleton helpers (same grid/card layout as the real dashboard) ----
 function Bone({ className = '' }) {
-  return <div className={`animate-pulse rounded-md bg-white/10 ${className}`} />;
+  return <div className={`animate-pulse rounded-md bg-white/[0.16] ${className}`} />;
 }
 
 function StatCardSkeleton() {
   return (
     <div className="card flex items-center gap-3">
-      <Bone className="w-11 h-11 rounded-lg shrink-0" />
+      <Bone className="w-12 h-12 rounded-xl shrink-0" />
       <div className="flex-1 space-y-2">
         <Bone className="h-3 w-24" />
         <Bone className="h-6 w-16" />

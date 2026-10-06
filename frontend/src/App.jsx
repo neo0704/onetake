@@ -51,35 +51,79 @@ import NotFound from './pages/NotFound';
 import HomePage from './pages/HomePage';
 
 // Full-page skeleton shown while the login check runs (sidebar + header + content)
-const Bone = ({ className = '' }) => (
-  <div className={`animate-pulse rounded-md bg-white/10 ${className}`} />
+const Bone = ({ className = '', style }) => (
+  <div style={style} className={`animate-pulse rounded-md bg-white/[0.16] ${className}`} />
 );
 
 const AppShellSkeleton = () => (
   <div className="flex h-screen bg-[#0f0f1a]" aria-busy="true" aria-label="Loading">
-    {/* Sidebar (hidden on small screens) */}
-    <aside className="hidden lg:flex w-64 shrink-0 flex-col gap-3 p-4 border-r border-white/10">
-      <Bone className="h-9 w-32 mb-4" />
-      {[...Array(7)].map((_, i) => <Bone key={i} className="h-10 w-full" />)}
+    {/* Sidebar */}
+    <aside className="hidden lg:flex w-[248px] shrink-0 flex-col bg-[#16213e] border-r border-white/10">
+      {/* Logo block */}
+      <div className="h-[57px] shrink-0 flex items-center gap-3 px-3 border-b border-white/10">
+        <Bone className="w-9 h-9 rounded-full shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <Bone className="h-3.5 w-24" />
+          <Bone className="h-2.5 w-16" />
+        </div>
+      </div>
+      {/* Nav items */}
+      <div className="flex-1 p-2 pt-3 space-y-1.5">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3 h-11 px-3">
+            <Bone className="w-4 h-4 shrink-0" />
+            <Bone className="h-3.5" style={{ width: `${55 + ((i * 13) % 30)}%` }} />
+          </div>
+        ))}
+      </div>
+      {/* User footer */}
+      <div className="border-t border-white/10 p-3 space-y-3">
+        <div className="flex items-center gap-3">
+          <Bone className="w-9 h-9 rounded-full shrink-0" />
+          <div className="flex-1 space-y-1.5">
+            <Bone className="h-3 w-24" />
+            <Bone className="h-2.5 w-16" />
+          </div>
+        </div>
+        <Bone className="h-3.5 w-32" />
+        <Bone className="h-3.5 w-20" />
+      </div>
     </aside>
 
     <div className="flex-1 min-w-0 flex flex-col">
       {/* Top bar */}
-      <header className="flex items-center justify-between p-4 border-b border-white/10">
-        <Bone className="h-6 w-40" />
-        <Bone className="h-9 w-9 rounded-full" />
+      <header className="h-[57px] shrink-0 flex items-center justify-between px-4 bg-[#16213e] border-b border-white/10">
+        <Bone className="h-5 w-5 lg:hidden" />
+        <div className="ml-auto flex items-center gap-3">
+          <Bone className="h-6 w-6 rounded-full" />
+          <Bone className="h-6 w-6 rounded-full" />
+          <Bone className="h-6 w-6 rounded-full" />
+        </div>
       </header>
 
-      {/* Content */}
-      <main className="flex-1 overflow-hidden p-4 sm:p-6 space-y-6">
-        <div className="space-y-2">
-          <Bone className="h-8 w-48" />
-          <Bone className="h-4 w-64" />
+      {/* Content (centered column like the real layout) */}
+      <main className="flex-1 overflow-hidden p-4 sm:p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="space-y-2">
+            <Bone className="h-8 w-44" />
+            <Bone className="h-3.5 w-64 max-w-full" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="card flex items-center gap-3">
+                <Bone className="w-12 h-12 rounded-xl shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Bone className="h-3 w-24" />
+                  <Bone className="h-6 w-12" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="card">
+            <Bone className="h-5 w-40 mb-4" />
+            <Bone className="h-48 w-full" />
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {[...Array(4)].map((_, i) => <Bone key={i} className="h-24" />)}
-        </div>
-        <Bone className="h-64 w-full" />
       </main>
     </div>
   </div>
