@@ -1,15 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Mail, Camera, Trash2, Save } from 'lucide-react';
+import { Mail, Camera, Trash2, Save, Maximize2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import useAuthStore from '../../store/authStore'; // adjust path if needed
+import { formatDate } from '../../utils/helpers';import useAuthStore from '../../store/authStore'; // adjust path if needed
 import { Bone } from '../../components/shared/Skeletons';
 
 const EMPTY = { name: '', email: '', phone: '', company: '', address: '' };
 
 export default function ClientProfile() {
   const store = useAuthStore();
-  const { user } = store;
+  const { user, init } = store;
   const userId = user?._id || user?.id;
 
   // ── Profile details ────────────────────────────────────────────────────────
@@ -19,6 +19,7 @@ export default function ClientProfile() {
   const [savingProfile, setSavingProfile]   = useState(false);
   const [avatarBusy, setAvatarBusy]         = useState(false);
   const fileRef = useRef(null);
+  const [showFullImage, setShowFullImage] = useState(false);
 
   const toForm = (u) => ({
     name:    u?.name    || '',
@@ -28,11 +29,10 @@ export default function ClientProfile() {
     address: u?.address || '',
   });
 
-  // Keep the global auth store in sync so the header/sidebar shows the new name/avatar.
-  const syncStore = (u) => {
-    const merged = { ...(user || {}), ...u };
-    if (typeof store.setUser === 'function') store.setUser(merged);
-    else if (typeof store.updateUser === 'function') store.updateUser(merged);
+  // Refresh the auth store (same as the freelancer profile) so the sidebar/header
+  // show the new name and photo.
+  const syncStore = async () => {
+    try { await init?.(); } catch { /* non-fatal */ }
   };
 
   useEffect(() => {
@@ -91,9 +91,7 @@ export default function ClientProfile() {
     body.append('avatar', file);
     setAvatarBusy(true);
     try {
-      const { data } = await api.post('/users/profile/avatar', body, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const { data } = await api.post('/users/profile/avatar', body);
       setProfile(data.user);
       syncStore(data.user);
       toast.success('Photo updated');
@@ -151,16 +149,23 @@ export default function ClientProfile() {
 
   const shown = profile || user;
   const initial = (shown?.name || '?')[0]?.toUpperCase();
+  // New avatars are absolute Cloudinary URLs; only old relative '/uploads/...' paths
+  // need the backend origin prepended (same handling as the freelancer profile).
+  const API_ORIGIN = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+  const avatarSrc = shown?.avatar
+    ? (/^https?:\/\//i.test(shown.avatar) ? shown.avatar : `${API_ORIGIN}${shown.avatar}`)
+    : null;
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Profile</h1>
         <p className="text-white/40 text-sm mt-1">{shown?.name} · {shown?.email}</p>
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       {/* ── Details ─────────────────────────────────────────────────────── */}
-      <div className="card">
+      <div className="card lg:col-span-2">
         <h3 className="section-title mb-4">Your details</h3>
 
         {loadingProfile ? (
@@ -177,8 +182,16 @@ export default function ClientProfile() {
           <form onSubmit={saveProfile} className="space-y-4">
             {/* Avatar */}
             <div className="flex items-center gap-4">
-              {shown?.avatar ? (
-                <img src={shown.avatar} alt="Profile" className="w-16 h-16 rounded-full object-cover border border-white/10" />
+              {avatarSrc ? (
+                <div className="relative flex-shrink-0">
+                  <img src={avatarSrc} alt="Profile" onClick={() => setShowFullImage(true)}
+                    className="w-16 h-16 rounded-full object-cover border border-white/10 cursor-zoom-in" />
+                  <button type="button" onClick={() => setShowFullImage(true)}
+                    title="View full size" aria-label="View photo full size"
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-dark-800 border border-white/20 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-colors">
+                    <Maximize2 className="w-2.5 h-2.5" />
+                  </button>
+                </div>
               ) : (
                 <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-xl font-bold text-primary">
                   {initial}
@@ -236,6 +249,32 @@ export default function ClientProfile() {
             </div>
           </form>
         )}
+      </div>
+
+      {/* ── Right column ────────────────────────────────────────────────── */}
+      <div className="space-y-6">
+
+      {/* Account summary */}
+      <div className="card">
+        <h3 className="section-title mb-4">Account</h3>
+        <dl className="space-y-3 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-white/40">Role</dt>
+            <dd className="text-white capitalize">{shown?.role || 'client'}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-white/40">Member since</dt>
+            <dd className="text-white">{shown?.createdAt ? formatDate(shown.createdAt) : '—'}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-white/40">Status</dt>
+            <dd>
+              <span className={`badge ${shown?.isActive === false ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                {shown?.isActive === false ? 'Inactive' : 'Active'}
+              </span>
+            </dd>
+          </div>
+        </dl>
       </div>
 
       {/* ── Notifications ───────────────────────────────────────────────── */}
@@ -299,6 +338,30 @@ export default function ClientProfile() {
           </>
         )}
       </div>
+
+      </div>
+      </div>
+
+      {showFullImage && avatarSrc && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setShowFullImage(false)}
+        >
+          <button
+            onClick={() => setShowFullImage(false)}
+            className="absolute top-4 right-4 text-white/70 hover:text-white p-2"
+            title="Close"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={avatarSrc}
+            alt={shown?.name}
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full rounded-xl object-contain cursor-default"
+          />
+        </div>
+      )}
     </div>
   );
 }

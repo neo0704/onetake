@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { ToggleLeft, ToggleRight, UserPlus, Check, X, Clock, Trash2 } from 'lucide-react';
+import { ToggleLeft, ToggleRight, UserPlus, Check, X, Clock, Trash2, Eye, Maximize2 } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingSpinner, PageHeader, Modal } from '../../components/shared';
 import { formatDate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 import { TablePageSkeleton } from '../../components/shared/Skeletons';
+
+// New avatars are absolute Cloudinary URLs; only old relative '/uploads/...' paths
+// need the backend origin prepended (same handling as the freelancer profile).
+const API_ORIGIN = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const avatarUrl = (a) => (!a ? null : /^https?:\/\//i.test(a) ? a : `${API_ORIGIN}${a}`);
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -14,6 +19,8 @@ export default function AdminUsers() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'client' });
   const [actingOn, setActingOn] = useState(null); // user id currently being approved/rejected
+  const [viewingUser, setViewingUser] = useState(null);
+  const [zoomSrc, setZoomSrc] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -171,6 +178,11 @@ export default function AdminUsers() {
                     {u.isActive ? <ToggleRight className="w-5 h-5 text-green-400" /> : <ToggleLeft className="w-5 h-5" />}
                   </button>
                 )}
+                <button onClick={() => setViewingUser(u)}
+                  className="text-white/40 hover:text-primary transition-colors"
+                  title="View profile" aria-label="View profile">
+                  <Eye className="w-4 h-4" />
+                </button>
                 <button onClick={() => setDeletingUser(u)} disabled={actingOn === u._id}
                   className="text-red-400/70 hover:text-red-400 transition-colors disabled:opacity-40"
                   title="Delete user" aria-label="Delete user">
@@ -238,7 +250,12 @@ export default function AdminUsers() {
                         {u.isActive ? <ToggleRight className="w-5 h-5 text-green-400" /> : <ToggleLeft className="w-5 h-5" />}
                       </button>
                     )}
-                    <button onClick={() => setDeletingUser(u)} disabled={actingOn === u._id}
+                    <button onClick={() => setViewingUser(u)}
+                  className="text-white/40 hover:text-primary transition-colors"
+                  title="View profile" aria-label="View profile">
+                  <Eye className="w-4 h-4" />
+                </button>
+                <button onClick={() => setDeletingUser(u)} disabled={actingOn === u._id}
                       className="text-red-400/70 hover:text-red-400 transition-colors disabled:opacity-40"
                       title="Delete user" aria-label="Delete user">
                       <Trash2 className="w-4 h-4" />
@@ -251,6 +268,69 @@ export default function AdminUsers() {
           </tbody>
         </table>
       </div>
+
+      <Modal isOpen={!!viewingUser} onClose={() => setViewingUser(null)} title="User Profile">
+        {viewingUser && (() => {
+          const v = viewingUser;
+          const skills = Array.isArray(v.skills) ? v.skills.join(', ') : v.skills;
+          const rate = v.rate ? `${v.rate}${v.rateType ? ` / ${v.rateType}` : ''}` : '';
+          const rows = [
+            ['Email', v.email],
+            ['Phone', v.phone],
+            ['Company', v.company],
+            ['Address', v.address],
+            ['Age', v.age],
+            ['Bio', v.bio],
+            ['Skills', skills],
+            ['Availability', v.availability],
+            ['Rate', rate],
+            ['Emergency contact', v.emergencyContact],
+            ['Emergency phone', v.emergencyPhone],
+            ['Facebook', v.socialFacebook],
+            ['Instagram', v.socialInstagram],
+            ['Joined', v.createdAt ? formatDate(v.createdAt) : ''],
+          ].filter(([, val]) => val !== undefined && val !== null && String(val).trim() !== '');
+          return (
+            <div className="space-y-5">
+              <div className="flex items-center gap-4">
+                {v.avatar ? (
+                  <div className="relative flex-shrink-0">
+                    <img src={avatarUrl(v.avatar)} alt="" onClick={() => setZoomSrc(avatarUrl(v.avatar))}
+                      className="w-16 h-16 rounded-full object-cover border border-white/10 cursor-zoom-in" />
+                    <button type="button" onClick={() => setZoomSrc(avatarUrl(v.avatar))}
+                      title="View full size" aria-label="View photo full size"
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-dark-800 border border-white/20 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-colors">
+                      <Maximize2 className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-xl font-bold text-primary">
+                    {(v.name || '?')[0].toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-white font-semibold text-lg truncate">{v.name}</p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    <span className={`badge capitalize ${v.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : v.role === 'freelancer' ? 'bg-blue-500/20 text-blue-400' : 'bg-teal-500/20 text-teal-400'}`}>{v.role}</span>
+                    <span className={`badge ${v.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{v.isActive ? 'Active' : 'Inactive'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <dl className="divide-y divide-white/5 text-sm">
+                {rows.map(([label, val]) => (
+                  <div key={label} className="flex items-start justify-between gap-4 py-2.5">
+                    <dt className="text-white/40 flex-shrink-0">{label}</dt>
+                    <dd className="text-white text-right break-words min-w-0">{String(val)}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              <button type="button" onClick={() => setViewingUser(null)} className="btn-secondary w-full justify-center">Close</button>
+            </div>
+          );
+        })()}
+      </Modal>
 
       <Modal isOpen={!!deletingUser} onClose={() => !deleting && setDeletingUser(null)} title="Delete User">
         <div className="space-y-4">
@@ -288,6 +368,27 @@ export default function AdminUsers() {
           </div>
         </form>
       </Modal>
+
+      {zoomSrc && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setZoomSrc(null)}
+        >
+          <button
+            onClick={() => setZoomSrc(null)}
+            className="absolute top-4 right-4 text-white/70 hover:text-white p-2"
+            title="Close"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={zoomSrc}
+            alt="Profile photo"
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full rounded-xl object-contain cursor-default"
+          />
+        </div>
+      )}
     </div>
   );
 }
