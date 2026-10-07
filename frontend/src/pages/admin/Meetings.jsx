@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Video, Plus, Clock, Users, ExternalLink, Check, X, CalendarClock, Lock, Unlock,
-  ChevronLeft, ChevronRight, MapPin, List, CalendarDays,
+  ChevronLeft, ChevronRight, MapPin, List, CalendarDays, Trash2,
 } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
@@ -21,7 +21,7 @@ function toLocalInputValue(isoString) {
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
-function MeetingCard({ meeting, onJoin, onToggleLock, togglingLock }) {
+function MeetingCard({ meeting, onJoin, onToggleLock, togglingLock, onDelete }) {
   // NOTE: statuses here are aligned to the actual Meeting schema
   // ('ongoing'/'done'), not 'in_progress'/'completed' — those values are
   // never actually set anywhere in the backend, so the old check silently
@@ -89,6 +89,16 @@ function MeetingCard({ meeting, onJoin, onToggleLock, togglingLock }) {
             {togglingLock ? 'Working...' : isExpired ? 'Enable Anyway' : 'Disable Again'}
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => onDelete(meeting)}
+          title="Delete meeting"
+          aria-label="Delete meeting"
+          className="btn-secondary text-sm px-3 justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
@@ -217,7 +227,7 @@ function buildCalendarEntries(meetings, events) {
   return entries;
 }
 
-function MeetingsCalendar({ entries, onJoin, onCreateOn }) {
+function MeetingsCalendar({ entries, onJoin, onCreateOn, onDelete }) {
   const [viewMonth, setViewMonth] = useState(() => {
     const n = new Date();
     return new Date(n.getFullYear(), n.getMonth(), 1);
@@ -381,6 +391,17 @@ function MeetingsCalendar({ entries, onJoin, onCreateOn }) {
                         <ExternalLink className="w-3.5 h-3.5" /> Join
                       </button>
                     )}
+                    {e.kind === 'meeting' && (
+                      <button
+                        type="button"
+                        onClick={() => onDelete({ _id: e.id, title: e.title })}
+                        title="Delete meeting"
+                        aria-label="Delete meeting"
+                        className="btn-secondary text-xs py-1.5 px-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -406,6 +427,8 @@ export default function AdminMeetings() {
   const [declineReason, setDeclineReason] = useState('');
   const [declining, setDeclining] = useState(false);
   const [togglingLockId, setTogglingLockId] = useState(null);
+  const [deletingMeeting, setDeletingMeeting] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [view, setView] = useState('list'); // 'list' | 'calendar'
   const navigate = useNavigate();
 
@@ -556,6 +579,21 @@ export default function AdminMeetings() {
     }
   };
 
+  const confirmDelete = async () => {
+    if (!deletingMeeting) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/meetings/${deletingMeeting._id}`);
+      toast.success('Meeting deleted');
+      setDeletingMeeting(null);
+      fetch();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete meeting');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) return <ListPageSkeleton filters={false} action />;
 
   const requests = meetings.filter(m => m.status === 'requested');
@@ -601,6 +639,7 @@ export default function AdminMeetings() {
           entries={calendarEntries}
           onJoin={(roomId) => navigate(`/meeting/${roomId}`)}
           onCreateOn={openCreateOn}
+          onDelete={setDeletingMeeting}
         />
       ) : (
       <>
@@ -615,6 +654,7 @@ export default function AdminMeetings() {
                 onJoin={(roomId) => navigate(`/meeting/${roomId}`)}
                 onToggleLock={handleToggleLock}
                 togglingLock={togglingLockId === m._id}
+                onDelete={setDeletingMeeting}
               />
             ))}
           </div>
@@ -632,6 +672,7 @@ export default function AdminMeetings() {
                 onJoin={(roomId) => navigate(`/meeting/${roomId}`)}
                 onToggleLock={handleToggleLock}
                 togglingLock={togglingLockId === m._id}
+                onDelete={setDeletingMeeting}
               />
             ))}
           </div>
@@ -649,6 +690,7 @@ export default function AdminMeetings() {
                 onJoin={(roomId) => navigate(`/meeting/${roomId}`)}
                 onToggleLock={handleToggleLock}
                 togglingLock={togglingLockId === m._id}
+                onDelete={setDeletingMeeting}
               />
             ))}
           </div>
@@ -803,6 +845,26 @@ export default function AdminMeetings() {
               className="btn-primary flex-1 justify-center bg-red-500/90 hover:bg-red-500 disabled:opacity-50"
             >
               {declining ? 'Declining...' : 'Decline Request'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={!!deletingMeeting} onClose={() => !deleting && setDeletingMeeting(null)} title="Delete Meeting" size="md">
+        <div className="space-y-4">
+          <p className="text-white/60 text-sm">
+            Permanently delete <span className="text-white font-medium">"{deletingMeeting?.title}"</span>?
+            Participants will no longer be able to join, and this can't be undone.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={() => setDeletingMeeting(null)} disabled={deleting} className="btn-secondary flex-1 justify-center">Cancel</button>
+            <button
+              type="button"
+              onClick={confirmDelete}
+              disabled={deleting}
+              className="btn-primary flex-1 justify-center bg-red-500/90 hover:bg-red-500 disabled:opacity-50"
+            >
+              {deleting ? 'Deleting...' : 'Delete Meeting'}
             </button>
           </div>
         </div>

@@ -132,3 +132,40 @@ exports.cancelMeeting = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// Admin-only: permanently remove a meeting.
+exports.deleteMeeting = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only admins can delete meetings' });
+    }
+
+    const meeting = await Meeting.findById(req.params.id);
+    if (!meeting) return res.status(404).json({ success: false, message: 'Meeting not found' });
+
+    await meeting.deleteOne();
+
+    // Let participants know, but never fail the delete because a notification failed.
+    // Skip meetings that were already finished/cancelled/declined/expired (nothing pending to tell them).
+    if (['scheduled', 'ongoing', 'requested'].includes(meeting.status)) {
+      const recipients = [...(meeting.participants || [])];
+      if (meeting.requestedBy) recipients.push(meeting.requestedBy);
+      const unique = [...new Set(recipients.map(String))];
+      for (const pid of unique) {
+        try {
+          await sendNotification({
+            recipient: pid,
+            type: 'general',
+            title: 'Meeting Removed',
+            message: `The meeting "${meeting.title}" has been removed by an admin.`,
+            data: { meetingId: meeting._id }
+          });
+        } catch (_) { /* ignore */ }
+      }
+    }
+
+    res.json({ success: true, message: 'Meeting deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
