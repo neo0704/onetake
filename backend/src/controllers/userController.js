@@ -45,10 +45,45 @@ exports.updateUser = async (req, res) => {
 
 exports.toggleUserStatus = async (req, res) => {
   try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    // Don't let an admin lock themselves out
+    if (String(user._id) === String(req.user.id) && user.isActive) {
+      return res.status(400).json({ success: false, message: "You can't deactivate your own account" });
+    }
+
+    // Use an update instead of user.save(): save() runs full validation and pre-save
+    // hooks (e.g. password hashing), which can fail on older records and makes this
+    // simple flag flip return a 500.
+    const updated = await User.findByIdAndUpdate(
+      req.params.id,
+      { isActive: !user.isActive },
+      { new: true }
+    ).select('-password');
+
+    res.json({ success: true, user: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// Admin-only: permanently remove a user account.
+exports.deleteUser = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only admins can delete users' });
+    }
+
     const user = await User.findById(req.params.id);
-    user.isActive = !user.isActive;
-    await user.save();
-    res.json({ success: true, user });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (String(user._id) === String(req.user.id)) {
+      return res.status(400).json({ success: false, message: "You can't delete your own account" });
+    }
+
+    await user.deleteOne();
+    res.json({ success: true, message: 'User deleted' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

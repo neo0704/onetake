@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ToggleLeft, ToggleRight, UserPlus, Check, X, Clock } from 'lucide-react';
+import { ToggleLeft, ToggleRight, UserPlus, Check, X, Clock, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingSpinner, PageHeader, Modal } from '../../components/shared';
 import { formatDate } from '../../utils/helpers';
@@ -14,6 +14,8 @@ export default function AdminUsers() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'client' });
   const [actingOn, setActingOn] = useState(null); // user id currently being approved/rejected
+  const [deletingUser, setDeletingUser] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetch = async () => {
     const params = roleFilter !== 'all' ? { role: roleFilter } : {};
@@ -31,9 +33,20 @@ export default function AdminUsers() {
     } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
   };
 
-  const toggle = async (id) => {
-    await api.put(`/users/${id}/toggle-status`);
-    fetch();
+  // Previously this had no error handling, so any failure (wrong route/method,
+  // 403, 404, 500) was swallowed and the button just looked like it did nothing.
+  const toggle = async (user) => {
+    setActingOn(user._id);
+    try {
+      await api.put(`/users/${user._id}/toggle-status`);
+      toast.success(user.isActive ? 'Account deactivated' : 'Account activated');
+      await fetch();
+    } catch (err) {
+      console.error('toggle-status failed:', err.response?.status, err.response?.data || err.message);
+      toast.error(err.response?.data?.message || `Failed to update account (${err.response?.status || 'network error'})`);
+    } finally {
+      setActingOn(null);
+    }
   };
 
   const decide = async (id, approve) => {
@@ -46,6 +59,22 @@ export default function AdminUsers() {
       toast.error(err.response?.data?.message || 'Action failed');
     } finally {
       setActingOn(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingUser) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/users/${deletingUser._id}`);
+      toast.success('User deleted');
+      setDeletingUser(null);
+      await fetch();
+    } catch (err) {
+      console.error('delete user failed:', err.response?.status, err.response?.data || err.message);
+      toast.error(err.response?.data?.message || `Failed to delete user (${err.response?.status || 'network error'})`);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -123,6 +152,7 @@ export default function AdminUsers() {
                   <span className={`badge text-xs ${u.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{u.isActive ? 'Active' : 'Inactive'}</span>
                 )}
 
+                <div className="flex items-center gap-4">
                 {isPending ? (
                   <div className="flex items-center gap-3">
                     <button onClick={() => decide(u._id, true)} disabled={actingOn === u._id}
@@ -135,10 +165,18 @@ export default function AdminUsers() {
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => toggle(u._id)} className="text-white/40 hover:text-primary transition-colors">
+                  <button onClick={() => toggle(u)} disabled={actingOn === u._id}
+                    title={u.isActive ? 'Deactivate account' : 'Activate account'}
+                    className="text-white/40 hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-wait">
                     {u.isActive ? <ToggleRight className="w-5 h-5 text-green-400" /> : <ToggleLeft className="w-5 h-5" />}
                   </button>
                 )}
+                <button onClick={() => setDeletingUser(u)} disabled={actingOn === u._id}
+                  className="text-red-400/70 hover:text-red-400 transition-colors disabled:opacity-40"
+                  title="Delete user" aria-label="Delete user">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                </div>
               </div>
             </div>
           );
@@ -181,6 +219,7 @@ export default function AdminUsers() {
                     )}
                   </td>
                   <td className="py-3">
+                    <div className="flex items-center gap-4">
                     {isPending ? (
                       <div className="flex items-center gap-3">
                         <button onClick={() => decide(u._id, true)} disabled={actingOn === u._id}
@@ -193,10 +232,18 @@ export default function AdminUsers() {
                         </button>
                       </div>
                     ) : (
-                      <button onClick={() => toggle(u._id)} className="text-white/40 hover:text-primary transition-colors">
+                      <button onClick={() => toggle(u)} disabled={actingOn === u._id}
+                    title={u.isActive ? 'Deactivate account' : 'Activate account'}
+                    className="text-white/40 hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-wait">
                         {u.isActive ? <ToggleRight className="w-5 h-5 text-green-400" /> : <ToggleLeft className="w-5 h-5" />}
                       </button>
                     )}
+                    <button onClick={() => setDeletingUser(u)} disabled={actingOn === u._id}
+                      className="text-red-400/70 hover:text-red-400 transition-colors disabled:opacity-40"
+                      title="Delete user" aria-label="Delete user">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -204,6 +251,23 @@ export default function AdminUsers() {
           </tbody>
         </table>
       </div>
+
+      <Modal isOpen={!!deletingUser} onClose={() => !deleting && setDeletingUser(null)} title="Delete User">
+        <div className="space-y-4">
+          <p className="text-white/60 text-sm">
+            Permanently delete <span className="text-white font-medium">{deletingUser?.name}</span>
+            {deletingUser?.email ? <span className="text-white/40"> ({deletingUser.email})</span> : null}?
+            They'll lose access immediately and this can't be undone. If you only want to block sign-in, use the deactivate toggle instead.
+          </p>
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+            <button type="button" onClick={() => setDeletingUser(null)} disabled={deleting} className="btn-secondary flex-1 justify-center">Cancel</button>
+            <button type="button" onClick={confirmDelete} disabled={deleting}
+              className="btn-primary flex-1 justify-center bg-red-500/90 hover:bg-red-500 disabled:opacity-50">
+              {deleting ? 'Deleting...' : 'Delete User'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create User">
         <form onSubmit={create} className="space-y-4">
