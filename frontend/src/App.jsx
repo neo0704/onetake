@@ -33,6 +33,7 @@ import ClientEventDetail from './pages/client/EventDetail';
 import ClientQuotations from './pages/client/Quotations';
 import ClientPayments from './pages/client/Payments';
 import ClientMeetings from './pages/client/Meetings';
+import ClientProfile from './pages/client/Profile';
 
 // Freelancer pages
 import FreelancerLayout from './components/layouts/FreelancerLayout';
@@ -261,6 +262,7 @@ export default function App() {
           <Route path="quotations" element={<ClientQuotations />} />
           <Route path="payments" element={<ClientPayments />} />
           <Route path="meetings" element={<ClientMeetings />} />
+          <Route path="profile" element={<ClientProfile />} />
         </Route>
 
         {/* Freelancer */}

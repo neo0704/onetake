@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Plus, CalendarDays, FileText,
-  CreditCard, Video, LogOut, Menu, X, Bell, Settings
+  CreditCard, Video, LogOut, Menu, X, Bell, Settings, User
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
@@ -17,6 +17,7 @@ const links = [
   { to: '/client/quotations', icon: FileText, label: 'Quotations' },
   { to: '/client/payments', icon: CreditCard, label: 'Payments' },
   { to: '/client/meetings', icon: Video, label: 'Meetings' },
+  { to: '/client/profile', icon: User, label: 'Profile' },
 ];
 
 export default function ClientLayout() {
@@ -82,9 +83,13 @@ export default function ClientLayout() {
           onMouseEnter={() => collapsed && setHoverExpanded(true)}
           className="px-3 py-4 border-t border-white/10">
           <div className={`flex items-center gap-3 px-3 py-2 rounded-lg ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}>
-            <div className="w-8 h-8 bg-primary/30 rounded-full flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
-              {user?.name?.[0]?.toUpperCase()}
-            </div>
+            {user?.avatar ? (
+              <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-8 h-8 bg-primary/30 rounded-full flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
+                {user?.name?.[0]?.toUpperCase()}
+              </div>
+            )}
             <div className={`flex-1 min-w-0 ${!expanded ? 'lg:hidden' : ''}`}>
               <p className="text-sm font-medium text-white truncate">{user?.name}</p>
               <p className="text-xs text-white/40">Client</p>
