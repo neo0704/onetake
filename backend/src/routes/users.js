@@ -165,11 +165,38 @@ router.put('/:id', protect, authorize('admin'), async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
-// DELETE /api/users/:id
+// PUT /api/users/:id/toggle-status — admin activate/deactivate an account
+// (the Users page calls this; it was missing, which is why the toggle returned 404)
+router.put('/:id/toggle-status', protect, authorize('admin'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    // Don't let an admin lock themselves out
+    if (String(user._id) === String(req.user.id) && user.isActive) {
+      return res.status(400).json({ success: false, message: "You can't deactivate your own account" });
+    }
+
+    // findByIdAndUpdate instead of save(): skips full validation / pre-save hooks
+    const updated = await User.findByIdAndUpdate(
+      req.params.id,
+      { isActive: !user.isActive },
+      { new: true }
+    ).select('-password');
+
+    res.json({ success: true, user: updated });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+// DELETE /api/users/:id — admin permanently deletes a user
 router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
+    if (String(req.params.id) === String(req.user.id)) {
+      return res.status(400).json({ success: false, message: "You can't delete your own account" });
+    }
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, message: 'User deleted' });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
