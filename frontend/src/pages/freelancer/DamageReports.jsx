@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, ShieldAlert, CheckCircle2, Clock, Wrench, Calendar, ChevronDown, ChevronUp, ImageIcon } from 'lucide-react';
 import api from '../../services/api';
 import { DamageReportsSkeleton } from '../../components/shared/Skeletons';
@@ -162,14 +163,24 @@ function ReportCard({ report }) {
         </div>
       )}
 
-      {/* Lightbox */}
-      {lightbox && (
+      {/* Lightbox — rendered via portal so it isn't trapped inside this card's
+          backdrop-blur-sm ancestor, which otherwise makes `fixed inset-0` cover
+          only the card's bounds instead of the full screen (and breaks
+          click-outside-to-close, since most of the visible "surroundings"
+          would actually be outside the div's real, shrunken boundaries). */}
+      {lightbox && createPortal(
         <div
           className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           onClick={() => setLightbox(null)}
         >
-          <img src={lightbox} alt="damage" className="max-w-full max-h-[90vh] rounded-xl object-contain" />
-        </div>
+          <img
+            src={lightbox}
+            alt="damage"
+            onClick={e => e.stopPropagation()}
+            className="max-w-full max-h-[90vh] rounded-xl object-contain"
+          />
+        </div>,
+        document.body
       )}
     </div>
   );
