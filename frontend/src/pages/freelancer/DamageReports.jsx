@@ -16,6 +16,16 @@ const STATUS_COLOR = {
   resolved:     { bg: 'bg-green-500/10', text: 'text-green-400', border: 'border-green-500/30' },
 };
 
+// New photos are absolute Cloudinary URLs (https://res.cloudinary.com/...) and are
+// used as-is. Only old-style relative paths like '/uploads/damage/xxx.jpg' — saved
+// before damage photo uploads moved to Cloudinary — need the backend origin prepended.
+const resolvePhotoUrl = (src) => {
+  if (!src) return '';
+  if (/^https?:\/\//i.test(src)) return src;
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+  return `${baseUrl}${src}`;
+};
+
 const Badge = ({ label, colors }) => (
   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${colors.bg} ${colors.text} ${colors.border}`}>
     {label}
@@ -34,8 +44,6 @@ function ReportCard({ report }) {
 
   const dmg    = DAMAGE_COLOR[report.damageType] || DAMAGE_COLOR.minor;
   const status = STATUS_COLOR[report.status]     || STATUS_COLOR.open;
-
-  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
   return (
     <div className={`rounded-xl border bg-white/[0.03] backdrop-blur-sm transition-all duration-200 ${
@@ -136,15 +144,18 @@ function ReportCard({ report }) {
                 <ImageIcon className="w-3 h-3" /> Photos
               </p>
               <div className="flex flex-wrap gap-2">
-                {report.photos.map((src, i) => (
-                  <img
-                    key={i}
-                    src={`${baseUrl}${src}`}
-                    alt={`damage-${i}`}
-                    className="w-20 h-20 object-cover rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => setLightbox(`${baseUrl}${src}`)}
-                  />
-                ))}
+                {report.photos.map((src, i) => {
+                  const url = resolvePhotoUrl(src);
+                  return (
+                    <img
+                      key={i}
+                      src={url}
+                      alt={`damage-${i}`}
+                      className="w-20 h-20 object-cover rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => setLightbox(url)}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
