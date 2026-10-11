@@ -32,6 +32,9 @@ const SERVICES = [
   },
 ];
 
+// Keep in sync with FINISHED_STATUSES in backend eventController.js
+const FINISHED_STATUSES = ['completed_paid', 'cancelled'];
+
 const SERVICE_LABELS = SERVICES.reduce((acc, s) => ({ ...acc, [s.key]: s.label }), {});
 
 const MEETING_OPTIONS = [
@@ -278,6 +281,8 @@ export default function ClientInquiry() {
   const [bookedDates, setBookedDates] = useState(new Set());
   const [meetingSlots, setMeetingSlots] = useState({}); // { 'YYYY-MM-DD': ['9:00 AM', ...] }
   const [showConfirm, setShowConfirm] = useState(false);
+  const [activeEvent, setActiveEvent] = useState(null); // unfinished event that blocks new inquiries
+  const [checkingActive, setCheckingActive] = useState(true);
   const [form, setForm] = useState({
     eventName:          '',
     eventDate:          '',
@@ -294,6 +299,24 @@ export default function ClientInquiry() {
 
   const minDate = eventDateMin();
   const today   = new Date().toISOString().slice(0, 10);
+
+  // Block new inquiries while the client still has an unfinished event.
+  // The server enforces this too — this just gives instant feedback.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get('/events');
+        const active = (data.events || []).find(e => !FINISHED_STATUSES.includes(e.status));
+        if (!cancelled) setActiveEvent(active || null);
+      } catch {
+        // Non-fatal — the server still re-validates on submit
+      } finally {
+        if (!cancelled) setCheckingActive(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -348,6 +371,10 @@ export default function ClientInquiry() {
 
   const submit = (e) => {
     e.preventDefault();
+    if (activeEvent) {
+      toast.error('You still have an unfinished event. Please wait until it is completed or cancelled.');
+      return;
+    }
     setAttemptedSubmit(true);
 
     const currentErrors = getFormErrors(form, bookedDates, meetingSlots);
@@ -398,6 +425,16 @@ export default function ClientInquiry() {
       navigate('/client/events');
     } catch (err) {
       if (err.response?.status === 409) {
+        if (err.response.data?.code === 'ACTIVE_EVENT_EXISTS') {
+          // Server says an unfinished event exists — lock the form
+          setActiveEvent({
+            _id: err.response.data.activeEventId,
+            eventName: 'your current event',
+          });
+          setShowConfirm(false);
+          toast.error(err.response.data.message);
+          return;
+        }
         if (err.response.data?.code === 'MEETING_SLOT_TAKEN') {
           // Someone confirmed this meeting slot between page-load and submit
           setMeetingSlots(prev => ({
@@ -439,6 +476,26 @@ export default function ClientInquiry() {
           Tell us about your event and we&apos;ll prepare a custom package just for you.
         </p>
       </div>
+
+      {activeEvent && (
+        <div className="mb-5 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-amber-400 font-semibold text-sm">You already have an event in progress</p>
+            <p className="text-amber-400/80 text-xs mt-1 leading-relaxed">
+              {activeEvent.eventName?.trim() ? `"${activeEvent.eventName.trim()}"` : 'Your current event'} isn&apos;t finished yet.
+              You can send a new inquiry once it is completed or cancelled.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/client/events')}
+              className="text-amber-300 text-xs font-medium underline underline-offset-2 mt-2"
+            >
+              View my projects
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
@@ -761,7 +818,8 @@ export default function ClientInquiry() {
           </div>
 
           {/* Mobile-only submit (sidebar handles it on desktop) */}
-          <button type="submit" disabled={saving} className="btn-primary w-full justify-center py-3 lg:hidden">
+          <button type="submit" disabled={saving || !!activeEvent || checkingActive}
+            className="btn-primary w-full justify-center py-3 lg:hidden disabled:opacity-40 disabled:cursor-not-allowed">
             <SubmitLabel />
           </button>
         </form>
@@ -816,8 +874,8 @@ export default function ClientInquiry() {
             <button
               type="submit"
               form="inquiry-form"
-              disabled={saving}
-              className="btn-primary w-full justify-center py-3 mt-5 hidden lg:flex bg-gradient-to-r from-primary to-fuchsia-500"
+              disabled={saving || !!activeEvent || checkingActive}
+              className="btn-primary w-full justify-center py-3 mt-5 hidden lg:flex bg-gradient-to-r from-primary to-fuchsia-500 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <SubmitLabel />
             </button>

@@ -18,14 +18,29 @@ export default function ClientEvents() {
 
   if (loading) return <ListPageSkeleton filters={false} action />;
 
+  // A new inquiry is only allowed once every existing project is finished
+  // (keep in sync with FINISHED_STATUSES in backend eventController.js)
+  const FINISHED = ['completed_paid', 'cancelled'];
+  const hasActiveEvent = events.some(e => !FINISHED.includes(e.status));
+  const blockedTitle = 'You can send a new inquiry once your current project is completed or cancelled.';
+
   return (
     <div className="space-y-5 animate-fade-in">
       <PageHeader title="My Projects" subtitle={`${events.length} projects`}
         action={
-          <button onClick={() => navigate('/client/inquiry')} className="btn-primary w-full sm:w-auto justify-center">
+          <button onClick={() => navigate('/client/inquiry')}
+            disabled={hasActiveEvent}
+            title={hasActiveEvent ? blockedTitle : undefined}
+            className="btn-primary w-full sm:w-auto justify-center disabled:opacity-40 disabled:cursor-not-allowed">
             <Plus className="w-4 h-4" /> <span className="sm:hidden">New</span><span className="hidden sm:inline">New Inquiry</span>
           </button>
         } />
+
+      {hasActiveEvent && (
+        <p className="text-amber-400/80 text-xs bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
+          {blockedTitle}
+        </p>
+      )}
 
       {events.length === 0 ? (
         <EmptyState icon={CalendarDays} title="No projects yet"

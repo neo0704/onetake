@@ -14,6 +14,12 @@ const BOOKED_STATUSES = [
   'completed_pending_balance', 'completed_paid', 'cancellation_requested',
 ];
 
+// An event is "finished" once it is fully paid or cancelled. Anything else
+// (inquiry, meeting, quotation, in_progress, pending balance...) is still
+// active and blocks the client from sending a new inquiry.
+// Keep in sync with FINISHED_STATUSES in the client Inquiry.jsx / Events.jsx.
+const FINISHED_STATUSES = ['completed_paid', 'cancelled'];
+
 // Returns the [start, end) UTC range for the calendar day of the given date/string
 const dayRange = (dateInput) => {
   const d = new Date(dateInput);
@@ -89,6 +95,22 @@ exports.createInquiry = async (req, res) => {
 
     if (!eventDate) {
       return res.status(400).json({ success: false, message: 'Event date is required' });
+    }
+
+    // ── One active event per client: block a new inquiry while an existing
+    // one is still in progress / not finished.
+    const activeEvent = await Event.findOne({
+      client: req.user.id,
+      status: { $nin: FINISHED_STATUSES },
+    }).select('_id eventName status');
+
+    if (activeEvent) {
+      return res.status(409).json({
+        success: false,
+        code: 'ACTIVE_EVENT_EXISTS',
+        message: `You still have an unfinished event ("${activeEvent.eventName || 'Untitled'}"). Please wait until it's completed or cancelled before sending a new inquiry.`,
+        activeEventId: activeEvent._id,
+      });
     }
 
     // ── Prevent double-booking: block the date once another inquiry on it
