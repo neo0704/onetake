@@ -47,6 +47,26 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
+// POST /api/users — admin creates a user (the Users page "Add User" form calls this)
+router.post('/', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { name, email, password, phone, role } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Name, email and password are required' });
+    }
+    const existing = await User.findOne({ email: String(email).toLowerCase() });
+    if (existing) return res.status(400).json({ success: false, message: 'Email already exists' });
+
+    // Admin-created accounts are approved straight away (no pending state).
+    const user = await User.create({
+      name, email: String(email).toLowerCase(), password, phone, role: role || 'client',
+      accountStatus: 'approved', isActive: true,
+    });
+    const safe = user.toObject(); delete safe.password;
+    res.status(201).json({ success: true, user: safe });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
 // GET /api/users/:id — get single user (admin or self)
 router.get('/:id', protect, async (req, res) => {
   try {
