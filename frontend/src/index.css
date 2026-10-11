@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,7 +8,6 @@
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
-    font-family: 'Syne', sans-serif;
     background: var(--app-bg);
     color: var(--app-text);
     min-height: 100vh;
