@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, CalendarDays, Clock,
-  Video, LogOut, Menu, X, Bell, Banknote, AlertTriangle, Settings
+  Video, LogOut, Menu, X, Bell, Banknote, AlertTriangle
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
 import NotificationPanel from '../shared/NotificationPanel';
-import NotificationPreferencesPanel from '../shared/NotificationPreferencesPanel';
 import { useTheme, ThemeToggle } from '../shared/theme';
 
 const LINKS = [
@@ -30,7 +29,6 @@ export default function FreelancerLayout() {
   const [collapsed,     setCollapsed]     = useState(false);   // desktop rail collapse (pinned)
   const [hoverExpanded, setHoverExpanded] = useState(false);   // temp expand on hover, only when collapsed
   const [showNotifs,    setShowNotifs]    = useState(false);
-  const [showSettings,  setShowSettings]  = useState(false);
   const [avatarError,   setAvatarError]   = useState(false);   // fall back to initials if the image 404s
 
   // New avatars are absolute Cloudinary URLs (https://res.cloudinary.com/...) and
@@ -150,17 +148,6 @@ export default function FreelancerLayout() {
 
           <div className="flex-1" />
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
-
-          {/* Notification Settings */}
-          <div className="relative">
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-            {showSettings && <NotificationPreferencesPanel onClose={() => setShowSettings(false)} />}
-          </div>
 
           {/* Notification Bell */}
           <div className="relative">
