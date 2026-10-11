@@ -154,6 +154,37 @@ export default function FreelancerProfile() {
     } finally { setSavingRate(false); }
   };
 
+  // ── Email notification preference ──────────────────────────────────────────
+  const [emailNotifs, setEmailNotifs]     = useState(null); // null = not loaded yet
+  const [loadingPrefs, setLoadingPrefs]   = useState(true);
+  const [savingPrefs, setSavingPrefs]     = useState(false);
+  const [prefsError, setPrefsError]       = useState('');
+
+  useEffect(() => {
+    api.get('/notification-preferences')
+      .then(({ data }) => {
+        if (data.success) setEmailNotifs(data.emailNotificationsEnabled);
+        else setPrefsError(data.message || 'Failed to load preferences');
+      })
+      .catch(err => setPrefsError(err.response?.data?.message || 'Failed to load preferences'))
+      .finally(() => setLoadingPrefs(false));
+  }, []);
+
+  const toggleEmailNotifs = async () => {
+    if (emailNotifs === null || savingPrefs) return;
+    setSavingPrefs(true);
+    setPrefsError('');
+    try {
+      const { data } = await api.patch('/notification-preferences', { emailNotificationsEnabled: !emailNotifs });
+      if (data.success) setEmailNotifs(data.emailNotificationsEnabled);
+      else setPrefsError(data.message || 'Failed to update preference');
+    } catch (err) {
+      setPrefsError(err.response?.data?.message || 'Failed to update preference');
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
+
   // ── Save full profile ──────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
@@ -472,6 +503,32 @@ export default function FreelancerProfile() {
                 {savingRate ? 'Saving...' : 'Save Rate'}
               </button>
             </div>
+          </div>
+
+          {/* Email notification preference */}
+          <div className="card">
+            <h3 className="section-title mb-1">Email Notifications</h3>
+            <p className="text-white/40 text-xs mb-3">
+              Get an email whenever you receive a notification. In-app notifications always stay on.
+            </p>
+            {loadingPrefs ? (
+              <div className="h-8 w-full rounded-lg bg-white/5 animate-pulse" />
+            ) : (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm text-white/70 min-w-0">
+                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{emailNotifs ? 'Emails are on' : 'Emails are off'}</span>
+                </div>
+                <button type="button" role="switch" aria-checked={!!emailNotifs}
+                  onClick={toggleEmailNotifs} disabled={emailNotifs === null || savingPrefs}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 disabled:opacity-50
+                    ${emailNotifs ? 'bg-primary' : 'bg-white/20'}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform
+                    ${emailNotifs ? 'translate-x-5' : ''}`} />
+                </button>
+              </div>
+            )}
+            {prefsError && <p className="text-red-400 text-xs mt-2">{prefsError}</p>}
           </div>
 
           {!editMode ? (
