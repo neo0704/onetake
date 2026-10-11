@@ -6,7 +6,7 @@ const fs      = require('fs');
 const cloudinary = require('cloudinary').v2;
 const User    = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
-const { findUserRecords, recordsMessage } = require('../utils/userRecords');
+const { countUnfinishedProjects, unfinishedMessage } = require('../utils/userRecords');
 
 // ── Cloudinary (permanent image storage) ───────────────────────────────────
 // Uses the same CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
@@ -198,10 +198,10 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ success: false, message: 'User not found' });
 
-    // Refuse if anything (projects, payments, payroll...) still points at this account
-    const records = await findUserRecords(target._id);
-    if (records.length) {
-      return res.status(409).json({ success: false, code: 'USER_HAS_RECORDS', message: recordsMessage(records) });
+    // Refuse while the account still has a project that isn't finished
+    const unfinished = await countUnfinishedProjects(target._id);
+    if (unfinished > 0) {
+      return res.status(409).json({ success: false, code: 'USER_HAS_ACTIVE_PROJECTS', message: unfinishedMessage(unfinished) });
     }
 
     await target.deleteOne();

@@ -1,35 +1,24 @@
 const mongoose = require('mongoose');
 
-// Places a user can be referenced from. Models that aren't registered, and
-// fields that don't exist on a model's schema, are skipped automatically, so a
-// wrong guess here can never crash the server. Add more entries as needed.
-const REFERENCES = [
-  { model: 'Event',        label: 'projects',        fields: ['client', 'assignedFreelancers.freelancer'] },
-  { model: 'Quotation',    label: 'quotations',      fields: ['client'] },
-  { model: 'Payment',      label: 'payments',        fields: ['client'] },
-  { model: 'Payroll',      label: 'payroll entries', fields: ['freelancer'] },
-  { model: 'Meeting',      label: 'meetings',        fields: ['createdBy', 'requestedBy', 'participants'] },
-  { model: 'DamageReport', label: 'damage reports',  fields: ['freelancer', 'reportedBy'] },
-];
+// A project counts as "finished" once it is fully paid or cancelled.
+// Everything else (inquiries, quotations, confirmed, assigned, in progress,
+// completed but balance still unpaid...) blocks deleting the account.
+// Add any other end-state your app uses (e.g. 'declined') to this list.
+const FINISHED_STATUSES = ['completed_paid', 'cancelled'];
 
-const hasPath = (schema, p) => !!schema.path(p) || !!schema.path(p.split('.')[0]);
-
-// Returns the labels of everything that still points at this user, e.g. ['projects', 'payments'].
-async function findUserRecords(userId) {
-  const found = [];
-  for (const ref of REFERENCES) {
-    const Model = mongoose.models[ref.model];
-    if (!Model) continue;
-    const fields = ref.fields.filter(f => hasPath(Model.schema, f));
-    if (!fields.length) continue;
-    const hit = await Model.exists({ $or: fields.map(f => ({ [f]: userId })) });
-    if (hit) found.push(ref.label);
-  }
-  return found;
+// How many unfinished projects involve this user, as the client or as an assigned freelancer.
+async function countUnfinishedProjects(userId) {
+  const Event = mongoose.models.Event;
+  // Fail safe: if the model isn't loaded, refuse to delete rather than silently allow it.
+  if (!Event) throw new Error('Event model is not registered; cannot check projects before deleting');
+  return Event.countDocuments({
+    status: { $nin: FINISHED_STATUSES },
+    $or: [{ client: userId }, { 'assignedFreelancers.freelancer': userId }],
+  });
 }
 
-const recordsMessage = (found) =>
-  `This account still has records (${found.join(', ')}) and can't be deleted. ` +
-  `Deactivate it instead to keep your history.`;
+const unfinishedMessage = (n) =>
+  `This account has ${n} project${n > 1 ? 's' : ''} that ${n > 1 ? "aren't" : "isn't"} finished yet, so it can't be deleted. ` +
+  `Finish or cancel ${n > 1 ? 'them' : 'it'} first, or deactivate the account instead.`;
 
-module.exports = { findUserRecords, recordsMessage };
+module.exports = { countUnfinishedProjects, unfinishedMessage, FINISHED_STATUSES };

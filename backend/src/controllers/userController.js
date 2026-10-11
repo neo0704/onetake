@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const { findUserRecords, recordsMessage } = require('../utils/userRecords');
+const { countUnfinishedProjects, unfinishedMessage } = require('../utils/userRecords');
 
 exports.getUsers = async (req, res) => {
   try {
@@ -83,9 +83,9 @@ exports.deleteUser = async (req, res) => {
       return res.status(400).json({ success: false, message: "You can't delete your own account" });
     }
 
-    const records = await findUserRecords(user._id);
-    if (records.length) {
-      return res.status(409).json({ success: false, code: 'USER_HAS_RECORDS', message: recordsMessage(records) });
+    const unfinished = await countUnfinishedProjects(user._id);
+    if (unfinished > 0) {
+      return res.status(409).json({ success: false, code: 'USER_HAS_ACTIVE_PROJECTS', message: unfinishedMessage(unfinished) });
     }
 
     await user.deleteOne();
