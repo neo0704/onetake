@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
@@ -23,7 +24,13 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && !isExpected401) {
       localStorage.removeItem('onetake_token');
       delete api.defaults.headers.common['Authorization'];
-      window.location.href = '/login';
+      // Account deleted/deactivated while logged in: say why, then go to login
+      if (err.response.data?.code === 'ACCOUNT_REMOVED') {
+        toast.error(err.response.data.message || 'Your account is no longer active.');
+        setTimeout(() => { window.location.href = '/login'; }, 1800);
+      } else {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(err);
   }

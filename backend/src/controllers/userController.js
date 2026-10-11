@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { findUserRecords, recordsMessage } = require('../utils/userRecords');
 
 exports.getUsers = async (req, res) => {
   try {
@@ -80,6 +81,11 @@ exports.deleteUser = async (req, res) => {
 
     if (String(user._id) === String(req.user.id)) {
       return res.status(400).json({ success: false, message: "You can't delete your own account" });
+    }
+
+    const records = await findUserRecords(user._id);
+    if (records.length) {
+      return res.status(409).json({ success: false, code: 'USER_HAS_RECORDS', message: recordsMessage(records) });
     }
 
     await user.deleteOne();

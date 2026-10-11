@@ -6,6 +6,7 @@ const fs      = require('fs');
 const cloudinary = require('cloudinary').v2;
 const User    = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
+const { findUserRecords, recordsMessage } = require('../utils/userRecords');
 
 // ── Cloudinary (permanent image storage) ───────────────────────────────────
 // Uses the same CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
@@ -194,8 +195,16 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
     if (String(req.params.id) === String(req.user.id)) {
       return res.status(400).json({ success: false, message: "You can't delete your own account" });
     }
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    const target = await User.findById(req.params.id);
+    if (!target) return res.status(404).json({ success: false, message: 'User not found' });
+
+    // Refuse if anything (projects, payments, payroll...) still points at this account
+    const records = await findUserRecords(target._id);
+    if (records.length) {
+      return res.status(409).json({ success: false, code: 'USER_HAS_RECORDS', message: recordsMessage(records) });
+    }
+
+    await target.deleteOne();
     res.json({ success: true, message: 'User deleted' });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
