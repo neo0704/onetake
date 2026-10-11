@@ -428,6 +428,104 @@ router.patch('/:id/toggle-lock', protect, authorize('admin'), async (req, res) =
   }
 });
 
+// ── PUT /api/meetings/:id ─────────────────────────────────────────────────────
+// Admin edits an existing meeting (title, time, duration, event, participants,
+// privacy, notes). Pending requests go through /approve instead, and finished
+// or cancelled meetings are locked.
+router.put('/:id', protect, authorize('admin'), async (req, res) => {
+  try {
+    const meeting = await Meeting.findById(req.params.id);
+    if (!meeting) return res.status(404).json({ success: false, message: 'Meeting not found' });
+
+    if (meeting.status === 'requested') {
+      return res.status(400).json({ success: false, message: 'This is a pending request — use Review & Confirm instead' });
+    }
+    if (!['scheduled', 'ongoing', 'expired'].includes(meeting.status)) {
+      return res.status(400).json({ success: false, message: 'This meeting can no longer be edited' });
+    }
+
+    const { eventId, title, scheduledAt, duration, notes, participantIds, isPrivate } = req.body;
+
+    const oldTime  = meeting.scheduledAt ? new Date(meeting.scheduledAt).getTime() : null;
+    const newTime  = scheduledAt ? new Date(scheduledAt).getTime() : oldTime;
+    if (scheduledAt && isNaN(newTime)) {
+      return res.status(400).json({ success: false, message: 'Invalid date' });
+    }
+    const timeChanged = Boolean(scheduledAt) && newTime !== oldTime;
+
+    const targetEventId = eventId !== undefined ? (eventId || null) : (meeting.event || null);
+    const eventChanged  = eventId !== undefined && String(targetEventId || '') !== String(meeting.event || '');
+
+    // Only re-validate the date when the time or linked event actually changed,
+    // so editing notes/participants on a meeting that already started still works.
+    if (timeChanged || eventChanged) {
+      let event = null;
+      if (targetEventId) {
+        event = await Event.findById(targetEventId);
+        if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+      }
+      const dateError = validateMeetingDate(new Date(newTime), event);
+      if (dateError) return res.status(400).json({ success: false, message: dateError });
+    }
+
+    const beforeParticipants = new Set((meeting.participants || []).map(p => p.toString()));
+    const titleChanged    = title !== undefined && title.trim() && title !== meeting.title;
+    const durationValue   = duration !== undefined ? (Number(duration) || meeting.duration) : meeting.duration;
+    const durationChanged = durationValue !== meeting.duration;
+
+    if (title !== undefined && title.trim()) meeting.title = title.trim();
+    if (timeChanged)                         meeting.scheduledAt = new Date(newTime);
+    meeting.duration = durationValue;
+    if (notes !== undefined)                 meeting.notes = notes;
+    if (isPrivate !== undefined)             meeting.isPrivate = Boolean(isPrivate);
+    if (eventId !== undefined)               meeting.event = targetEventId;
+    if (Array.isArray(participantIds)) {
+      meeting.participants = Array.from(new Set(participantIds.map(id => id.toString())));
+    }
+
+    // An expired meeting moved to a (validated, future) time is joinable again
+    if (meeting.status === 'expired' && timeChanged) {
+      meeting.status = 'scheduled';
+      meeting.manuallyReactivated = false;
+    }
+
+    await meeting.save();
+    await meeting.populate([
+      { path: 'event',        select: 'eventName eventDate' },
+      { path: 'scheduledBy',  select: 'name email' },
+      { path: 'participants', select: 'name email role' },
+    ]);
+
+    // Notify: newly added people get the invitation; everyone already invited is
+    // told if the title, time or length changed.
+    const detailsChanged = timeChanged || titleChanged || durationChanged;
+    const adminId = req.user._id.toString();
+    for (const p of meeting.participants) {
+      const pid = (p._id || p).toString();
+      if (pid === adminId) continue;
+      const isNew = !beforeParticipants.has(pid);
+      if (!isNew && !detailsChanged) continue;
+      try {
+        await sendNotification({
+          recipient: pid,
+          type: 'meeting_scheduled',
+          title: isNew ? 'Meeting Scheduled' : 'Meeting Updated',
+          message: isNew
+            ? `You have a meeting "${meeting.title}" scheduled for ${meeting.scheduledAt.toLocaleString('en-PH')}.`
+            : `Your meeting "${meeting.title}" was updated. It is now set for ${meeting.scheduledAt.toLocaleString('en-PH')}.`,
+          data: { meetingId: meeting._id, roomId: meeting.roomId },
+          link: `/meeting/${meeting.roomId}`,
+        });
+      } catch (e) { console.log('Notify error:', e.message); }
+    }
+
+    res.json({ success: true, message: 'Meeting updated', meeting });
+  } catch (err) {
+    console.error('❌ PUT /meetings/:id Error:', err.message);
+    res.status(500).json({ success: false, message: err.message || 'Failed to update meeting' });
+  }
+});
+
 // ── DELETE /api/meetings/:id ──────────────────────────────────────────────────
 router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {

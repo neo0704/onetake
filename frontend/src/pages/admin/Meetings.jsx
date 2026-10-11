@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Video, Plus, Clock, Users, ExternalLink, Check, X, CalendarClock, Lock, Unlock,
-  ChevronLeft, ChevronRight, MapPin, List, CalendarDays, Trash2,
+  ChevronLeft, ChevronRight, MapPin, List, CalendarDays, Trash2, Pencil,
 } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
@@ -21,7 +21,7 @@ function toLocalInputValue(isoString) {
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
-function MeetingCard({ meeting, onJoin, onToggleLock, togglingLock, onDelete }) {
+function MeetingCard({ meeting, onJoin, onToggleLock, togglingLock, onDelete, onEdit }) {
   // NOTE: statuses here are aligned to the actual Meeting schema
   // ('ongoing'/'done'), not 'in_progress'/'completed' — those values are
   // never actually set anywhere in the backend, so the old check silently
@@ -37,6 +37,7 @@ function MeetingCard({ meeting, onJoin, onToggleLock, togglingLock, onDelete }) 
 
   const isExpired = meeting.status === 'expired';
   const isReactivated = meeting.manuallyReactivated;
+  const canEdit = ['scheduled', 'ongoing', 'expired'].includes(meeting.status);
 
   return (
     <div className={`card ${isExpired ? 'border border-orange-500/20' : ''}`}>
@@ -87,6 +88,18 @@ function MeetingCard({ meeting, onJoin, onToggleLock, togglingLock, onDelete }) 
           >
             {isExpired ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
             {togglingLock ? 'Working...' : isExpired ? 'Enable Anyway' : 'Disable Again'}
+          </button>
+        )}
+
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => onEdit(meeting)}
+            title="Edit meeting"
+            aria-label="Edit meeting"
+            className="btn-secondary text-sm px-3 justify-center"
+          >
+            <Pencil className="w-4 h-4" />
           </button>
         )}
 
@@ -227,7 +240,7 @@ function buildCalendarEntries(meetings, events) {
   return entries;
 }
 
-function MeetingsCalendar({ entries, onJoin, onCreateOn, onDelete }) {
+function MeetingsCalendar({ entries, onJoin, onCreateOn, onDelete, onEdit }) {
   const [viewMonth, setViewMonth] = useState(() => {
     const n = new Date();
     return new Date(n.getFullYear(), n.getMonth(), 1);
@@ -391,6 +404,17 @@ function MeetingsCalendar({ entries, onJoin, onCreateOn, onDelete }) {
                         <ExternalLink className="w-3.5 h-3.5" /> Join
                       </button>
                     )}
+                    {e.kind === 'meeting' && ['scheduled', 'ongoing', 'expired'].includes(e.status) && (
+                      <button
+                        type="button"
+                        onClick={() => onEdit(e.id)}
+                        title="Edit meeting"
+                        aria-label="Edit meeting"
+                        className="btn-secondary text-xs py-1.5 px-2.5"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     {e.kind === 'meeting' && (
                       <button
                         type="button"
@@ -429,6 +453,7 @@ export default function AdminMeetings() {
   const [togglingLockId, setTogglingLockId] = useState(null);
   const [deletingMeeting, setDeletingMeeting] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState(null); // meeting being edited (null = create / approve flow)
   const [view, setView] = useState('list'); // 'list' | 'calendar'
   const navigate = useNavigate();
 
@@ -450,6 +475,7 @@ export default function AdminMeetings() {
     setForm({ title: '', scheduledAt: '', duration: 60, notes: '', eventId: '', isPrivate: false });
     setSelectedParticipants([]);
     setApprovingMeeting(null);
+    setEditingMeeting(null);
   };
 
   const closeModal = () => {
@@ -469,6 +495,23 @@ export default function AdminMeetings() {
     setShowModal(true);
   };
 
+  // Opened from the Edit (pencil) button — fills the form with the meeting's current details
+  const openEdit = (meeting) => {
+    resetForm();
+    setEditingMeeting(meeting);
+    setForm({
+      title: meeting.title || '',
+      scheduledAt: toLocalInputValue(meeting.scheduledAt),
+      duration: meeting.duration || 60,
+      notes: meeting.notes || '',
+      eventId: String(meeting.event?._id || meeting.event || ''),
+      isPrivate: Boolean(meeting.isPrivate),
+    });
+    // participants may come back as populated objects or plain ids
+    setSelectedParticipants((meeting.participants || []).map(p => String(p?._id || p)));
+    setShowModal(true);
+  };
+
   const selectedEvent = events.find(ev => ev._id === form.eventId) || null;
   const minDateTime = toLocalInputValue(new Date());
   // Only limit the date to the event's date if that date is still ahead of us.
@@ -477,6 +520,10 @@ export default function AdminMeetings() {
   const eventMaxValue = selectedEvent?.eventDate ? toLocalInputValue(selectedEvent.eventDate) : '';
   const maxDateTime = eventMaxValue && eventMaxValue >= minDateTime ? eventMaxValue : undefined;
   const eventDatePassed = Boolean(eventMaxValue) && !maxDateTime;
+  // When editing a meeting whose start time is already past (ongoing/expired), don't let the
+  // browser's min-date check block saving other changes like notes or participants.
+  const originalValue = editingMeeting ? toLocalInputValue(editingMeeting.scheduledAt) : '';
+  const effectiveMin = originalValue && originalValue < minDateTime ? originalValue : minDateTime;
 
   // Warn (not block) if the chosen time overlaps another confirmed meeting
   const slotStart = form.scheduledAt ? new Date(form.scheduledAt) : null;
@@ -484,7 +531,7 @@ export default function AdminMeetings() {
     ? new Date(slotStart.getTime() + (Number(form.duration) || 60) * 60000)
     : null;
   const slotConflicts = slotEnd
-    ? calendarEntries.filter(e => e.blocking && e.id !== approvingMeeting?._id && slotStart < e.end && slotEnd > e.start)
+    ? calendarEntries.filter(e => e.blocking && e.id !== (approvingMeeting || editingMeeting)?._id && slotStart < e.end && slotEnd > e.start)
     : [];
 
   const handleEventChange = (eventId) => {
@@ -522,7 +569,10 @@ export default function AdminMeetings() {
     // Send an ISO time (with timezone) so the server doesn't read it in its own timezone
     const payload = { ...form, scheduledAt: when.toISOString(), participantIds: selectedParticipants };
     try {
-      if (approvingMeeting) {
+      if (editingMeeting) {
+        await api.put(`/meetings/${editingMeeting._id}`, payload);
+        toast.success('Meeting updated!');
+      } else if (approvingMeeting) {
         await api.patch(`/meetings/${approvingMeeting._id}/approve`, payload);
         toast.success('Meeting confirmed!');
       } else {
@@ -640,6 +690,7 @@ export default function AdminMeetings() {
           onJoin={(roomId) => navigate(`/meeting/${roomId}`)}
           onCreateOn={openCreateOn}
           onDelete={setDeletingMeeting}
+          onEdit={(id) => { const m = meetings.find(x => x._id === id); if (m) openEdit(m); }}
         />
       ) : (
       <>
@@ -655,6 +706,7 @@ export default function AdminMeetings() {
                 onToggleLock={handleToggleLock}
                 togglingLock={togglingLockId === m._id}
                 onDelete={setDeletingMeeting}
+                onEdit={openEdit}
               />
             ))}
           </div>
@@ -673,6 +725,7 @@ export default function AdminMeetings() {
                 onToggleLock={handleToggleLock}
                 togglingLock={togglingLockId === m._id}
                 onDelete={setDeletingMeeting}
+                onEdit={openEdit}
               />
             ))}
           </div>
@@ -691,6 +744,7 @@ export default function AdminMeetings() {
                 onToggleLock={handleToggleLock}
                 togglingLock={togglingLockId === m._id}
                 onDelete={setDeletingMeeting}
+                onEdit={openEdit}
               />
             ))}
           </div>
@@ -701,7 +755,7 @@ export default function AdminMeetings() {
       </>
       )}
 
-      <Modal isOpen={showModal} onClose={closeModal} title={approvingMeeting ? 'Confirm Meeting Request' : 'Schedule Meeting'} size="lg">
+      <Modal isOpen={showModal} onClose={closeModal} title={editingMeeting ? 'Edit Meeting' : approvingMeeting ? 'Confirm Meeting Request' : 'Schedule Meeting'} size="lg">
         <form onSubmit={submit} className="space-y-4">
           {approvingMeeting && (
             <p className="text-white/40 text-xs bg-dark-900 border border-white/10 rounded-lg p-3">
@@ -730,7 +784,7 @@ export default function AdminMeetings() {
                 className="input"
                 value={form.scheduledAt}
                 onChange={e => setForm({ ...form, scheduledAt: e.target.value })}
-                min={minDateTime}
+                min={effectiveMin}
                 max={maxDateTime}
                 required
               />
@@ -816,7 +870,7 @@ export default function AdminMeetings() {
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={closeModal} className="btn-secondary flex-1 justify-center">Cancel</button>
-            <button type="submit" className="btn-primary flex-1 justify-center">{approvingMeeting ? 'Confirm Meeting' : 'Schedule Meeting'}</button>
+            <button type="submit" className="btn-primary flex-1 justify-center">{editingMeeting ? 'Save Changes' : approvingMeeting ? 'Confirm Meeting' : 'Schedule Meeting'}</button>
           </div>
         </form>
       </Modal>
