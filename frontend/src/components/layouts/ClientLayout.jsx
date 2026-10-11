@@ -83,7 +83,7 @@ export default function ClientLayout() {
           className="px-3 py-4 border-t border-white/10">
           <NavLink to="/client/profile" title={!expanded ? 'View profile' : undefined}
             onClick={() => setSidebarOpen(false)}
-            className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-white/10 ${isActive ? 'bg-white/10' : ''} ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}>
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}>
             {user?.avatar ? (
               <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
             ) : (
