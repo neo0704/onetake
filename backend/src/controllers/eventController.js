@@ -97,6 +97,19 @@ exports.createInquiry = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Event date is required' });
     }
 
+    // ── Minimum lead time: the booking process takes at least 3 days.
+    const MIN_LEAD_DAYS = 3;
+    const earliest = new Date(Date.UTC(
+      new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() + MIN_LEAD_DAYS
+    ));
+    if (new Date(eventDate) < earliest) {
+      return res.status(400).json({
+        success: false,
+        code: 'DATE_TOO_SOON',
+        message: `Please choose an event date at least ${MIN_LEAD_DAYS} days from today — our process takes a minimum of ${MIN_LEAD_DAYS} days.`,
+      });
+    }
+
     // ── One active event per client: block a new inquiry while an existing
     // one is still in progress / not finished.
     const activeEvent = await Event.findOne({

@@ -297,7 +297,16 @@ export default function ClientInquiry() {
     specialRequests:    '',
   });
 
-  const minDate = eventDateMin();
+  // The booking process takes at least 3 days, so the event date must be
+  // 3+ days from today (never earlier than whatever eventDateMin() allows).
+  const MIN_LEAD_DAYS = 3;
+  const leadDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + MIN_LEAD_DAYS);
+    return ymd(d);
+  })();
+  const baseMin = eventDateMin();
+  const minDate = baseMin && baseMin > leadDate ? baseMin : leadDate;
   const today   = new Date().toISOString().slice(0, 10);
 
   // Block new inquiries while the client still has an unfinished event.
@@ -496,6 +505,17 @@ export default function ClientInquiry() {
           </div>
         </div>
       )}
+
+      <div className="mb-5 p-4 rounded-xl border border-blue-500/20 bg-blue-500/10 flex items-start gap-3">
+        <Clock className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+        <div className="min-w-0">
+          <p className="text-blue-400 font-semibold text-sm">Please book at least 3 days ahead</p>
+          <p className="text-blue-400/80 text-xs mt-1 leading-relaxed">
+            Our process (review, needs assessment, quotation and payment) takes a minimum of 3 days,
+            so please choose an event date that is at least 3 days from today.
+          </p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
