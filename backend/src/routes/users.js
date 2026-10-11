@@ -60,7 +60,8 @@ router.post('/', protect, authorize('admin'), async (req, res) => {
     // Admin-created accounts are approved straight away (no pending state).
     const user = await User.create({
       name, email: String(email).toLowerCase(), password, phone, role: role || 'client',
-      accountStatus: 'approved', isActive: true,
+      accountStatus: 'active', isActive: true,
+      emailVerified: true,
     });
     const safe = user.toObject(); delete safe.password;
     res.status(201).json({ success: true, user: safe });
