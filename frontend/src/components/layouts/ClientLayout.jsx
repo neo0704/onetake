@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Plus, CalendarDays, FileText,
-  CreditCard, Video, LogOut, Menu, X, Bell, Settings, User
+  CreditCard, Video, LogOut, Menu, X, Bell, Settings
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
@@ -17,7 +17,6 @@ const links = [
   { to: '/client/quotations', icon: FileText, label: 'Quotations' },
   { to: '/client/payments', icon: CreditCard, label: 'Payments' },
   { to: '/client/meetings', icon: Video, label: 'Meetings' },
-  { to: '/client/profile', icon: User, label: 'Profile' },
 ];
 
 export default function ClientLayout() {
@@ -28,8 +27,6 @@ export default function ClientLayout() {
   const [hoverExpanded, setHoverExpanded] = useState(false);   // temp expand on hover, only when collapsed
   const [showNotifs,    setShowNotifs]    = useState(false);
   const [showSettings,  setShowSettings]  = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const userMenuRef = useRef(null);
   const navigate = useNavigate();
   const { theme, toggle: toggleTheme } = useTheme('client');
 
@@ -37,16 +34,6 @@ export default function ClientLayout() {
 
   // Visually expanded = pinned open, or collapsed-but-hovered
   const expanded = !collapsed || hoverExpanded;
-
-  // Close the avatar menu when clicking anywhere outside it
-  useEffect(() => {
-    if (!showUserMenu) return;
-    const handler = (e) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showUserMenu]);
 
   return (
     <div className="flex h-screen bg-[#0f0f1a] overflow-hidden">
@@ -89,6 +76,31 @@ export default function ClientLayout() {
             </NavLink>
           ))}
         </nav>
+
+        {/* User */}
+        <div
+          onMouseEnter={() => collapsed && setHoverExpanded(true)}
+          className="px-3 py-4 border-t border-white/10">
+          <NavLink to="/client/profile" title={!expanded ? 'View profile' : undefined}
+            onClick={() => setSidebarOpen(false)}
+            className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-white/10 ${isActive ? 'bg-white/10' : ''} ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}>
+            {user?.avatar ? (
+              <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-8 h-8 bg-primary/30 rounded-full flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
+                {user?.name?.[0]?.toUpperCase()}
+              </div>
+            )}
+            <div className={`flex-1 min-w-0 ${!expanded ? 'lg:hidden' : ''}`}>
+              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+              <p className="text-xs text-white/40">Client</p>
+            </div>
+          </NavLink>
+          <button onClick={handleLogout} title={!expanded ? 'Logout' : undefined}
+            className={`btn-ghost w-full mt-2 text-sm ${!expanded ? 'lg:justify-center' : ''}`}>
+            <LogOut className="w-4 h-4 flex-shrink-0" /> <span className={!expanded ? 'lg:hidden' : ''}>Logout</span>
+          </button>
+        </div>
       </aside>
 
       {/* Overlay */}
@@ -122,32 +134,6 @@ export default function ClientLayout() {
               )}
             </button>
             {showNotifs && <NotificationPanel onClose={() => setShowNotifs(false)} />}
-          </div>
-
-          {/* Avatar — click to open profile / logout */}
-          <div className="relative" ref={userMenuRef}>
-            <button onClick={() => setShowUserMenu(o => !o)} title={user?.name}
-              className="w-9 h-9 bg-primary/30 rounded-full flex items-center justify-center text-sm font-bold text-primary overflow-hidden hover:ring-2 hover:ring-primary/40 transition">
-              {user?.avatar
-                ? <img src={user.avatar} alt="" className="w-full h-full object-cover" />
-                : user?.name?.[0]?.toUpperCase()}
-            </button>
-            {showUserMenu && (
-              <div className="absolute right-0 top-full mt-2 w-60 rounded-xl bg-dark-800 border border-white/10 shadow-2xl p-2 z-50">
-                <div className="px-3 py-2 border-b border-white/10 mb-1">
-                  <p className="text-sm font-medium text-white truncate">{user?.name}</p>
-                  <p className="text-xs text-white/40">Client</p>
-                </div>
-                <button onClick={() => { setShowUserMenu(false); navigate('/client/profile'); }}
-                  className="btn-ghost w-full text-sm justify-start">
-                  <User className="w-4 h-4 flex-shrink-0" /> Profile
-                </button>
-                <button onClick={() => { setShowUserMenu(false); handleLogout(); }}
-                  className="btn-ghost w-full mt-1 text-sm justify-start">
-                  <LogOut className="w-4 h-4 flex-shrink-0" /> Logout
-                </button>
-              </div>
-            )}
           </div>
         </header>
 
