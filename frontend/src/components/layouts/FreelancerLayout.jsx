@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, CalendarDays, Clock,
-  Video, LogOut, Menu, X, Bell, Banknote, UserCircle, AlertTriangle, Settings
+  Video, LogOut, Menu, X, Bell, Banknote, AlertTriangle, Settings
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
@@ -17,7 +17,6 @@ const LINKS = [
   { to: '/freelancer/damage-reports', icon: AlertTriangle, label: 'Damage Reports' },
   { to: '/freelancer/meetings', icon: Video,           label: 'Meetings'    },
   { to: '/freelancer/payroll',  icon: Banknote,        label: 'Payroll'     },
-  { to: '/freelancer/profile',  icon: UserCircle,      label: 'My Profile'  },
 ];
 
 export default function FreelancerLayout() {
@@ -101,7 +100,9 @@ export default function FreelancerLayout() {
         <div
           onMouseEnter={() => collapsed && setHoverExpanded(true)}
           className="px-3 py-4 border-t border-white/10">
-          <div className={`flex items-center gap-3 px-3 py-2 rounded-lg ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}>
+          <NavLink to="/freelancer/profile" title={!expanded ? 'View profile' : undefined}
+            onClick={() => setSidebarOpen(false)}
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}>
             <div className="w-8 h-8 bg-primary/30 rounded-full flex items-center justify-center text-sm font-bold text-primary flex-shrink-0 overflow-hidden">
               {avatarSrc && !avatarError ? (
                 <img
@@ -118,7 +119,7 @@ export default function FreelancerLayout() {
               <p className="text-sm font-medium text-white truncate">{user?.name}</p>
               <p className="text-xs text-white/40">Freelancer</p>
             </div>
-          </div>
+          </NavLink>
           <button
             onClick={handleLogout}
             title={!expanded ? 'Logout' : undefined}
