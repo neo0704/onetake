@@ -880,12 +880,20 @@ exports.assignResources = async (req, res) => {
     const event = await Event.findById(req.params.id);
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
 
-    if (FROZEN_STATUSES.includes(event.status)) {
+    // Team can be (re)assigned only BEFORE the event starts. Once it's in
+    // progress, finished, cancelled or has a pending cancellation, the team is
+    // locked — re-saving used to force the status back to 'assigned'.
+    const TEAM_LOCKED_STATUSES = ['in_progress', 'cancellation_requested', ...FROZEN_STATUSES];
+    if (TEAM_LOCKED_STATUSES.includes(event.status)) {
+      const reason = {
+        cancelled:                 'This event is cancelled',
+        cancellation_requested:    'A cancellation is pending for this event',
+        in_progress:               'This event is already in progress',
+      }[event.status] || 'This event is finished';
       return res.status(403).json({
         success: false,
-        message: event.status === 'cancelled'
-          ? 'This event is cancelled — the team can no longer be changed.'
-          : 'This event is finished — the team can no longer be changed.',
+        code: 'TEAM_LOCKED',
+        message: `${reason} — the team can no longer be changed.`,
       });
     }
 
