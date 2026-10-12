@@ -456,6 +456,18 @@ exports.updateNeedsAssessment = async (req, res) => {
       });
     }
 
+    // Lock the assessment once the event has moved past it (quotation sent,
+    // confirmed, paid, assigned, in progress...). The quotation and payments
+    // are built on this assessment, and re-saving it used to drag the status
+    // backwards. Only events still at/before "needs_assessed" can be saved.
+    if (!PRE_ASSESSMENT_STATUSES.includes(current.status)) {
+      return res.status(403).json({
+        success: false,
+        code: 'ASSESSMENT_LOCKED',
+        message: 'The assessment is locked — this project has already moved past the needs assessment stage (quotation sent or later).',
+      });
+    }
+
     const {
       attendees, videoType, specialRequests,
       selectedPackages,
@@ -468,8 +480,7 @@ exports.updateNeedsAssessment = async (req, res) => {
       attendees,
       videoType,
       specialRequests,
-      // Only advance the status if the event hasn't already moved past this stage
-      ...(PRE_ASSESSMENT_STATUSES.includes(current.status) && { status: 'needs_assessed' }),
+      status: 'needs_assessed', // safe: the lock above guarantees we're still at/before this stage
       'needsAssessment.attendees':        attendees,
       'needsAssessment.videoType':        videoType,
       'needsAssessment.specialRequests':  specialRequests,
