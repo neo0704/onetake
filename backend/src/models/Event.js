@@ -67,6 +67,18 @@ const eventSchema = new mongoose.Schema({
     adminNote:   { type: String, default: '' },
   },
 
+  // ── Cash arrangement ─────────────────────────────────────────────────────
+  // When the client chooses to pay in cash, no Payment records are kept.
+  // The client requests it, the admin confirms it, and once `confirmed` the
+  // 50% downpayment / payment-milestone checks are skipped for this event.
+  cashArrangement: {
+    requested:   { type: Boolean, default: false },
+    requestedAt: { type: Date },
+    confirmed:   { type: Boolean, default: false },
+    confirmedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    confirmedAt: { type: Date },
+  },
+
   // ── Timeline: one entry per completed step ───────────────────────────────
   timeline: [timelineEntrySchema],
 

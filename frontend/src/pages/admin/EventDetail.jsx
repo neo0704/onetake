@@ -880,6 +880,28 @@ export default function AdminEventDetail() {
     return `This project has moved past that stage, so the ${what} can no longer be changed.`;
   };
 
+  // ── Cash arrangement ─────────────────────────────────────────────────────
+  // Client chose cash: no payment records. Once the admin confirms, the 50%
+  // downpayment checks are skipped for this project.
+  const cashRequested = !!event?.cashArrangement?.requested && !event?.cashArrangement?.confirmed;
+  const cashConfirmed = !!event?.cashArrangement?.confirmed;
+
+  const confirmCash = async () => {
+    try {
+      await api.put(`/payments/cash-confirm/${id}`);
+      toast.success('Cash arrangement confirmed.');
+      fetchEvent();
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to confirm cash arrangement'); }
+  };
+
+  const declineCash = async () => {
+    try {
+      await api.put(`/payments/cash-decline/${id}`, {});
+      toast.success('Cash request declined.');
+      fetchEvent();
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to decline cash request'); }
+  };
+
   const saveAssessment = async (formData) => {
     if (assessmentLocked) { toast.error(lockReason('assessment')); return; }
     setSaving(true);
@@ -958,7 +980,7 @@ export default function AdminEventDetail() {
     const total    = paymentSummary?.totalAmount || 0;
     const paid     = paymentSummary?.totalPaid   || 0;
     const required = total * 0.5;
-    if (total > 0 && paid < required) { setShowPayWarn(true); return; }
+    if (total > 0 && paid < required && !cashConfirmed) { setShowPayWarn(true); return; }
     doSaveAssignment();
   };
 
@@ -1300,7 +1322,31 @@ export default function AdminEventDetail() {
             </button>
           )}
 
-          {event.status === 'downpayment_paid' && paymentSummary !== null && (paymentSummary?.totalPaid || 0) === 0 && (
+          {cashRequested && (
+            <div className="flex items-center gap-2 flex-wrap px-3 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <span className="text-yellow-400 text-sm font-medium">Client chose to pay in cash</span>
+              <button onClick={() => askConfirm({
+                title: 'Confirm Cash Arrangement?',
+                message: `This skips payment tracking for "${event.eventName}": no 50% downpayment is required and the project moves forward. Only confirm once you have agreed to the cash payment with the client.`,
+                type: 'warning', confirmLabel: 'Yes, Confirm Cash',
+                onConfirm: confirmCash,
+              })} className="btn-primary text-sm">Confirm Cash</button>
+              <button onClick={() => askConfirm({
+                title: 'Decline Cash Request?',
+                message: 'The client will be asked to choose another payment method.',
+                type: 'warning', confirmLabel: 'Decline',
+                onConfirm: declineCash,
+              })} className="btn-ghost text-sm">Decline</button>
+            </div>
+          )}
+
+          {cashConfirmed && (
+            <div className="px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-sm font-medium">
+              Cash arrangement confirmed — payment tracking skipped
+            </div>
+          )}
+
+          {event.status === 'downpayment_paid' && !cashConfirmed && paymentSummary !== null && (paymentSummary?.totalPaid || 0) === 0 && (
             <button onClick={() => askConfirm({
               title: 'Undo Downpayment Mark?',
               message: 'No payment record exists for this event. This will revert the status back to "Confirmed" so the client can submit their actual payment. Continue?',
@@ -1698,7 +1744,7 @@ export default function AdminEventDetail() {
             </div>
           )}
 
-          {!assignmentLocked && paymentSummary && paymentSummary.totalAmount > 0 &&
+          {!assignmentLocked && !cashConfirmed && paymentSummary && paymentSummary.totalAmount > 0 &&
            (paymentSummary.totalPaid || 0) < (paymentSummary.totalAmount * 0.5) && (
             <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />

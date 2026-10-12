@@ -570,7 +570,10 @@ exports.updateStatus = async (req, res) => {
     // 'downpayment_paid' requires 50% of the quotation total; 'completed_paid'
     // requires the full amount.
     const PAYMENT_MILESTONE_FRACTIONS = { downpayment_paid: 0.5, completed_paid: 1 };
-    if (PAYMENT_MILESTONE_FRACTIONS[status] !== undefined) {
+    // Cash arrangement (admin-confirmed) skips payment tracking entirely.
+    const cashEv = await Event.findById(req.params.id).select('cashArrangement').lean();
+    const cashConfirmed = !!cashEv?.cashArrangement?.confirmed;
+    if (PAYMENT_MILESTONE_FRACTIONS[status] !== undefined && !cashConfirmed) {
       const Payment = require('../models/Payment');
       const quotation = await Quotation.findOne({ event: req.params.id, status: 'approved' });
       if (quotation) {
@@ -906,7 +909,8 @@ exports.assignResources = async (req, res) => {
       return res.status(400).json({ success: false, message: 'The client must approve a quotation before assigning a team.' });
     }
 
-    if (approvedQuotation) {
+    // A confirmed cash arrangement skips the 50% downpayment requirement.
+    if (approvedQuotation && !event.cashArrangement?.confirmed) {
       const requiredDownpayment = approvedQuotation.totalAmount * 0.5;
       if (totalPaid < requiredDownpayment) {
         return res.status(400).json({

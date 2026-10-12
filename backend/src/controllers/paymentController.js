@@ -192,6 +192,141 @@ exports.verifyPayment = async (req, res) => {
   }
 };
 
+// ── Cash arrangement ─────────────────────────────────────────────────────────
+// Cash skips payment tracking entirely: no Payment record, no amount, no proof.
+// Client requests → admin confirms → the 50% / payment-milestone checks are
+// bypassed for that event (see eventController.updateStatus / assignResources).
+const CASH_REQUESTABLE_STATUSES = ['quotation_sent', 'confirmed', 'downpayment_paid', 'assigned'];
+
+exports.requestCash = async (req, res) => {
+  try {
+    const { eventId } = req.body;
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+
+    if (event.client.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+    if (!CASH_REQUESTABLE_STATUSES.includes(event.status)) {
+      return res.status(400).json({ success: false, message: 'A cash arrangement can only be requested before the event starts.' });
+    }
+    if (event.cashArrangement?.confirmed) {
+      return res.status(409).json({ success: false, message: 'The cash arrangement for this project is already confirmed.' });
+    }
+    if (event.cashArrangement?.requested) {
+      return res.status(409).json({ success: false, message: 'You already requested a cash arrangement for this project.' });
+    }
+
+    const approved = await Quotation.findOne({ event: eventId, status: 'approved' });
+    if (!approved) {
+      return res.status(400).json({ success: false, message: 'Please approve the quotation before choosing a payment method.' });
+    }
+
+    const hasPayments = await Payment.exists({ event: eventId, status: { $in: ['pending', 'verified'] } });
+    if (hasPayments) {
+      return res.status(400).json({ success: false, message: 'This project already has a payment on record, so cash cannot be used.' });
+    }
+
+    event.cashArrangement = { requested: true, requestedAt: new Date(), confirmed: false };
+    await event.save();
+
+    await notifyAdmins({
+      type: 'payment_submitted',
+      title: 'Cash Payment Requested',
+      message: `${req.user.name} chose to pay in cash for "${event.eventName}". Please confirm the arrangement.`,
+      data: { eventId },
+      link: `/admin/events/${eventId}`,
+    });
+
+    res.json({ success: true, cashArrangement: event.cashArrangement });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.confirmCash = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.eventId).populate('client', 'name email');
+    if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+
+    if (!event.cashArrangement?.requested) {
+      return res.status(400).json({ success: false, message: 'The client has not requested a cash arrangement.' });
+    }
+    if (event.cashArrangement.confirmed) {
+      return res.status(400).json({ success: false, message: 'Already confirmed.' });
+    }
+
+    event.cashArrangement.confirmed   = true;
+    event.cashArrangement.confirmedBy = req.user.id;
+    event.cashArrangement.confirmedAt = new Date();
+
+    // Move the project forward only if it hasn't reached the downpayment stage yet
+    if (['quotation_sent', 'confirmed'].includes(event.status)) {
+      event.status = 'downpayment_paid';
+    }
+    if (!event.timeline.some(t => t.status === 'downpayment_paid')) {
+      event.timeline.push({
+        status:      'downpayment_paid',
+        label:       'Cash Arrangement Confirmed',
+        note:        'Paid in cash — payment tracking skipped',
+        doneBy:      req.user.id,
+        doneByName:  req.user.name,
+        completedAt: new Date(),
+      });
+    }
+    await event.save();
+
+    try {
+      await sendNotification({
+        recipient: event.client._id,
+        type: 'payment_verified',
+        title: 'Cash Arrangement Confirmed',
+        message: `Your cash payment arrangement for "${event.eventName}" is confirmed. We will now assign your team.`,
+        data: { eventId: event._id },
+        link: `/client/events/${event._id}`,
+      });
+    } catch (e) { console.log('Notify err:', e.message); }
+
+    try {
+      getIO().to(event.client._id.toString()).emit('event_status_updated', { eventId: event._id, status: event.status });
+    } catch {}
+
+    res.json({ success: true, event });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.declineCash = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const event = await Event.findById(req.params.eventId).populate('client', 'name email');
+    if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+
+    if (!event.cashArrangement?.requested || event.cashArrangement.confirmed) {
+      return res.status(400).json({ success: false, message: 'There is no pending cash request to decline.' });
+    }
+
+    event.cashArrangement = { requested: false, confirmed: false };
+    await event.save();
+
+    try {
+      await sendNotification({
+        recipient: event.client._id,
+        type: 'payment_rejected',
+        title: 'Cash Request Declined',
+        message: `Your cash request for "${event.eventName}" was not accepted.${reason ? ` Reason: ${reason}` : ''} Please choose another payment method.`,
+        data: { eventId: event._id },
+        link: `/client/payments`,
+      });
+    } catch (e) { console.log('Notify err:', e.message); }
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 exports.getPayments = async (req, res) => {
   try {
     let query = {};
@@ -235,7 +370,13 @@ exports.getPaymentSummary = async (req, res) => {
     const totalAmount = quotation ? quotation.totalAmount : 0;
     const balance = totalAmount - totalPaid;
 
-    res.json({ success: true, summary: { totalAmount, totalPaid, balance, payments, quotation } });
+    const ev = await Event.findById(eventId).select('cashArrangement').lean();
+    const cash = {
+      requested: !!ev?.cashArrangement?.requested,
+      confirmed: !!ev?.cashArrangement?.confirmed,
+    };
+
+    res.json({ success: true, summary: { totalAmount, totalPaid, balance, payments, quotation, cash } });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

@@ -133,6 +133,15 @@ export default function ClientPayments() {
     ? payments.find(p => p.event?._id === form.eventId && p.status === 'pending')
     : null;
 
+  // ── Cash arrangement ─────────────────────────────────────────────────────
+  // Cash skips payment tracking: no amount, reference or proof. The client just
+  // requests it and the admin confirms. Only offered before any payment exists.
+  const cashRequested = !!selectedEvent?.cashArrangement?.requested && !selectedEvent?.cashArrangement?.confirmed;
+  const cashConfirmed = !!selectedEvent?.cashArrangement?.confirmed;
+  const cashBlocked   = cashRequested || cashConfirmed;
+  const cashAllowed   = !hasDownpayment && !isCompletedPendingBalance;
+  const isCash        = form.method === 'cash';
+
   const fetchData = async () => {
     try {
       const [pRes, eRes] = await Promise.all([
@@ -193,6 +202,15 @@ export default function ClientPayments() {
       toast.error('You already have a payment awaiting review for this project.');
       return;
     }
+    if (cashBlocked) return;
+    if (isCash) {
+      if (!cashAllowed) {
+        toast.error('Cash is only available before any payment has been made for this project.');
+        return;
+      }
+      setShowConfirm(true);
+      return;
+    }
     const methodConfig = METHODS.find(m => m.value === form.method) || METHODS[0];
 
     if (methodConfig.refPattern && !methodConfig.refPattern.test(form.referenceNumber.trim())) {
@@ -210,6 +228,17 @@ export default function ClientPayments() {
     setShowConfirm(false);
     setSubmitting(true);
     try {
+      if (isCash) {
+        await api.post('/payments/cash-request', { eventId: form.eventId });
+        toast.success('Cash arrangement requested. Our team will confirm it shortly.');
+        setShowModal(false);
+        setProofFile(null);
+        setPaySummary(null);
+        setSelectedEvent(null);
+        setForm({ eventId:'', type:'downpayment', amount:'', method:'gcash', referenceNumber:'', notes:'' });
+        fetchData();
+        return;
+      }
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
       if (proofFile) fd.append('proof', proofFile);
@@ -243,7 +272,31 @@ export default function ClientPayments() {
           </button>
         } />
 
-      {payments.length === 0 ? (
+      {/* Cash arrangements — these have no payment record, so show them here */}
+      {events.filter(e => e.cashArrangement?.requested).map(e => (
+        <div key={`cash-${e._id}`} className="card">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="badge bg-yellow-500/20 text-yellow-400">cash</span>
+                  <span className={`badge ${e.cashArrangement.confirmed ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                    {e.cashArrangement.confirmed ? 'confirmed' : 'awaiting confirmation'}
+                  </span>
+                </div>
+                <h3 className="text-white font-semibold mt-1">{e.eventName}</h3>
+                <p className="text-white/50 text-sm">Cash arrangement — pay our team directly</p>
+              </div>
+            </div>
+            <p className="text-white/40 text-xs flex-shrink-0">{formatDate(e.cashArrangement.confirmedAt || e.cashArrangement.requestedAt)}</p>
+          </div>
+        </div>
+      ))}
+
+      {payments.length === 0 && !events.some(e => e.cashArrangement?.requested) ? (
         <EmptyState icon={CreditCard} title="No payments yet"
           description="Submit your downpayment to confirm your booking."
           action={<button onClick={() => setShowModal(true)} className="btn-primary">Submit Payment</button>} />
@@ -395,7 +448,28 @@ export default function ClientPayments() {
             </div>
           )}
 
-          {!pendingPayment && (
+          {/* Cash arrangement already requested / confirmed for this project */}
+          {cashRequested && (
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-2.5">
+              <Clock className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-yellow-400 text-sm font-medium">Cash Arrangement Requested</p>
+                <p className="text-yellow-400/70 text-xs mt-1">
+                  Your cash payment request is awaiting confirmation from our team. Nothing else is needed from you right now.
+                </p>
+              </div>
+            </div>
+          )}
+          {cashConfirmed && (
+            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+              <p className="text-green-400 text-sm font-medium">Cash Arrangement Confirmed</p>
+              <p className="text-green-400/70 text-xs mt-1">
+                Your cash payment arrangement is confirmed. There is nothing to submit online for this project — please pay our team directly.
+              </p>
+            </div>
+          )}
+
+          {!pendingPayment && !cashBlocked && (
             <>
           {/* Payment summary */}
           {paySummary?.quotation && (
@@ -419,8 +493,8 @@ export default function ClientPayments() {
             </div>
           )}
 
-          {/* Payment type */}
-          <div>
+          {/* Payment type (not needed for cash) */}
+          {!isCash && <div>
             <label className="label">Payment Type *</label>
             <div className={`grid gap-2 ${availableTypes.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
               {availableTypes.map(opt => (
@@ -444,17 +518,17 @@ export default function ClientPayments() {
                 Downpayment already received — settling the remaining balance.
               </p>
             )}
-          </div>
+          </div>}
 
-          {/* Amount */}
-          <div>
+          {/* Amount (not needed for cash) */}
+          {!isCash && <div>
             <label className="label">Amount (₱) *
               {paySummary && <span className="text-primary/70 text-xs ml-2 font-normal">auto-filled</span>}
             </label>
             <input type="number" min="1" step="0.01" className="input" placeholder="0.00"
               value={form.amount}
               onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required />
-          </div>
+          </div>}
 
           {/* Payment method */}
           <div>
@@ -462,10 +536,14 @@ export default function ClientPayments() {
             <div className="grid grid-cols-2 gap-2">
               {METHODS.map(m => {
                 const Icon = m.icon;
+                const cashOff = m.value === 'cash' && !cashAllowed;
                 return (
                   <button key={m.value} type="button"
+                    disabled={cashOff}
+                    title={cashOff ? 'Cash is only available before any payment has been made' : undefined}
                     onClick={() => setForm(f => ({ ...f, method: m.value, referenceNumber: '' }))}
                     className={`p-3 rounded-xl border text-sm font-medium transition-all flex items-center gap-2
+                      ${cashOff ? 'opacity-40 cursor-not-allowed' : ''}
                       ${form.method === m.value ? m.active : m.color}`}>
                     <Icon className="w-4 h-4 flex-shrink-0" />{m.label}
                   </button>
@@ -525,7 +603,8 @@ export default function ClientPayments() {
             <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
               <p className="text-yellow-400 text-sm font-medium">Cash Payment</p>
               <p className="text-yellow-400/70 text-xs mt-1">
-                Please bring the exact cash amount. Our team will provide an official receipt upon collection.
+                No amount, reference number or proof is needed. Just send your request and our team will confirm
+                the cash arrangement — you will pay our team directly and receive an official receipt.
               </p>
             </div>
           )}
@@ -540,7 +619,9 @@ export default function ClientPayments() {
 
           <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
             <p className="text-blue-400 text-xs">
-              Payment will be verified within 24 hours. Your booking is confirmed once the downpayment is verified.
+              {isCash
+                ? 'Your booking moves forward once our team confirms the cash arrangement.'
+                : 'Payment will be verified within 24 hours. Your booking is confirmed once the downpayment is verified.'}
             </p>
           </div>
             </>
@@ -548,11 +629,11 @@ export default function ClientPayments() {
 
           <div className="flex gap-3">
             <button type="button" onClick={() => { setShowModal(false); setSelectedEvent(null); setPaySummary(null); setForm({ eventId:'', type:'downpayment', amount:'', method:'gcash', referenceNumber:'', notes:'' }); }} className="btn-secondary flex-1 justify-center">
-              {pendingPayment ? 'Close' : 'Cancel'}
+              {(pendingPayment || cashBlocked) ? 'Close' : 'Cancel'}
             </button>
-            {!pendingPayment && (
+            {!pendingPayment && !cashBlocked && (
               <button type="submit" disabled={submitting} className="btn-primary flex-1 justify-center">
-                {submitting ? 'Submitting...' : 'Submit Payment'}
+                {submitting ? 'Submitting...' : isCash ? 'Request Cash Arrangement' : 'Submit Payment'}
               </button>
             )}
           </div>
@@ -567,7 +648,9 @@ export default function ClientPayments() {
       >
         <div className="space-y-4">
           <p className="text-white/60 text-sm">
-            Please review your payment details before submitting. This will be sent to our team for verification.
+            {isCash
+              ? 'You are requesting to pay in cash. Our team will confirm the arrangement — no amount or proof is needed.'
+              : 'Please review your payment details before submitting. This will be sent to our team for verification.'}
           </p>
 
           {/* Summary */}
@@ -598,7 +681,7 @@ export default function ClientPayments() {
                 label: 'Proof of Payment',
                 value: proofFile.name,
               }] : []),
-            ].map(row => (
+            ].filter(row => !isCash || ['Project', 'Method'].includes(row.label)).map(row => (
               <div key={row.label} className="flex justify-between items-center px-4 py-3 text-sm">
                 <span className="text-white/50">{row.label}</span>
                 <span className={row.highlight ? 'text-primary font-bold text-base' : 'text-white font-medium'}>
