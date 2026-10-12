@@ -861,11 +861,27 @@ export default function AdminEventDetail() {
     }
   };
 
-  // Assessment, team and equipment can no longer be changed once the event is done or cancelled
-  const assignmentLocked = ['completed_pending_balance', 'completed_paid', 'cancelled'].includes(event?.status);
+  // Assessment: editable only while the project is still at/before "needs_assessed".
+  // Once a quotation is sent (or later) it's locked — keep in sync with
+  // PRE_ASSESSMENT_STATUSES in backend eventController.js.
+  const assessmentLocked = !['inquiry_received', 'inquiry_accepted', 'meeting_scheduled', 'needs_assessed'].includes(event?.status);
+
+  // Team & equipment: editable until the event starts. Locked once it's in
+  // progress, finished, cancelled or a cancellation is pending — keep in sync
+  // with TEAM_LOCKED_STATUSES in backend eventController.js.
+  const assignmentLocked = ['in_progress', 'cancellation_requested', 'completed_pending_balance', 'completed_paid', 'cancelled'].includes(event?.status);
+
+  const lockReason = (what) => {
+    const s = event?.status;
+    if (s === 'cancelled') return `This event is cancelled, so the ${what} can no longer be changed.`;
+    if (s === 'cancellation_requested') return `A cancellation is pending, so the ${what} can no longer be changed.`;
+    if (s === 'in_progress') return `This event is already in progress, so the ${what} can no longer be changed.`;
+    if (['completed_pending_balance', 'completed_paid'].includes(s)) return `This event is finished, so the ${what} can no longer be changed.`;
+    return `This project has moved past that stage, so the ${what} can no longer be changed.`;
+  };
 
   const saveAssessment = async (formData) => {
-    if (assignmentLocked) { toast.error('This event is finished — the assessment can no longer be changed.'); return; }
+    if (assessmentLocked) { toast.error(lockReason('assessment')); return; }
     setSaving(true);
     try {
       await api.put(`/events/${id}/needs-assessment`, formData);
@@ -895,7 +911,7 @@ export default function AdminEventDetail() {
   };
 
   const doSaveAssignment = async () => {
-    if (assignmentLocked) { toast.error('This event is finished — the team can no longer be changed.'); setShowPayWarn(false); return; }
+    if (assignmentLocked) { toast.error(lockReason('team')); setShowPayWarn(false); return; }
     setSaving(true);
     try {
       await api.put(`/events/${id}/assign`, { assignedFreelancers });
@@ -915,7 +931,7 @@ export default function AdminEventDetail() {
     freelancers.find(f => f._id === fId)?.name || 'a team member';
 
   const saveAssignment = async () => {
-    if (assignmentLocked) { toast.error('This event is finished — the team can no longer be changed.'); return; }
+    if (assignmentLocked) { toast.error(lockReason('team')); return; }
     // Warn if any freelancer has no role assigned
     const missingRoles = assignedFreelancers.filter(af => !af.role || af.role.trim() === '');
     if (missingRoles.length > 0) {
@@ -1551,20 +1567,18 @@ export default function AdminEventDetail() {
               )}
             </div>
           )}
-          {assignmentLocked && (
+          {assessmentLocked && (
             <div className="p-4 bg-white/5 border border-white/10 rounded-xl flex items-start gap-3">
               <Lock className="w-5 h-5 text-white/50 flex-shrink-0 mt-0.5" />
               <div className="min-w-0">
                 <p className="text-white font-semibold text-sm">Assessment is locked</p>
-                <p className="text-white/50 text-xs mt-1">
-                  This event is {event.status === 'cancelled' ? 'cancelled' : 'finished'}, so the needs assessment can no longer be changed.
-                </p>
+                <p className="text-white/50 text-xs mt-1">{lockReason('needs assessment')}</p>
               </div>
             </div>
           )}
-          {/* Read-only once the event is finished: inputs/buttons disabled and clicks blocked */}
-          <fieldset disabled={assignmentLocked} className="min-w-0 border-0 p-0 m-0">
-            <div className={assignmentLocked ? 'pointer-events-none select-none opacity-70' : ''}>
+          {/* Read-only once locked: inputs/buttons disabled and clicks blocked */}
+          <fieldset disabled={assessmentLocked} className="min-w-0 border-0 p-0 m-0">
+            <div className={assessmentLocked ? 'pointer-events-none select-none opacity-70' : ''}>
               <AssessmentTab event={event} saving={saving} onSave={saveAssessment} />
             </div>
           </fieldset>
@@ -1679,9 +1693,7 @@ export default function AdminEventDetail() {
               <Lock className="w-5 h-5 text-white/50 flex-shrink-0 mt-0.5" />
               <div className="min-w-0">
                 <p className="text-white font-semibold text-sm">Team assignment is locked</p>
-                <p className="text-white/50 text-xs mt-1">
-                  This event is {event.status === 'cancelled' ? 'cancelled' : 'finished'}, so the team and equipment can no longer be changed.
-                </p>
+                <p className="text-white/50 text-xs mt-1">{lockReason('team and equipment')}</p>
               </div>
             </div>
           )}
