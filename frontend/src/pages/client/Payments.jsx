@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CreditCard, Plus, X, Smartphone, Building2, Wallet, QrCode, Clock } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
@@ -157,6 +158,22 @@ export default function ClientPayments() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // Arriving from a project's "Pay Downpayment" / "Pay Balance" button
+  // (/client/payments?pay=<eventId>): open the payment modal with that
+  // project already selected, then clear the param so a refresh doesn't reopen it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const payEventId = searchParams.get('pay');
+  useEffect(() => {
+    if (loading || !payEventId) return;
+    const ev = events.find(e => e._id === payEventId);
+    setSearchParams({}, { replace: true });
+    if (ev) {
+      setShowModal(true);
+      onEventChange(payEventId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, payEventId, events]);
 
   const onEventChange = async (eventId) => {
     const ev = events.find(e => e._id === eventId) || null;

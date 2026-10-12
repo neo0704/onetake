@@ -1082,7 +1082,7 @@ export default function ClientEventDetail() {
                 <span className="text-white/50">Required: </span>
                 <span className="text-white font-semibold">{formatCurrency(paymentSummary.totalAmount * 0.5)}</span>
               </div>
-              <button onClick={() => navigate(`/client/payments`)} className="btn-primary text-sm w-full sm:w-auto justify-center">
+              <button onClick={() => navigate(`/client/payments?pay=${event._id}`)} className="btn-primary text-sm w-full sm:w-auto justify-center">
                 Pay Downpayment
               </button>
             </div>
@@ -1123,7 +1123,7 @@ export default function ClientEventDetail() {
                 <span className="text-white/50">Balance: </span>
                 <span className="text-white font-semibold">{formatCurrency(paymentSummary.balance)}</span>
               </div>
-              <button onClick={() => navigate(`/client/payments`)} className="btn-primary text-sm w-full sm:w-auto justify-center">
+              <button onClick={() => navigate(`/client/payments?pay=${event._id}`)} className="btn-primary text-sm w-full sm:w-auto justify-center">
                 Pay Balance
               </button>
             </div>
