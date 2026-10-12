@@ -437,6 +437,11 @@ exports.getEvent = async (req, res) => {
 // enforces it — anyone can call the API directly.
 const FROZEN_STATUSES = ['completed_pending_balance', 'completed_paid', 'cancelled'];
 
+// Statuses that come BEFORE (or at) "needs_assessed". Saving the assessment or
+// marking a meeting done may only move an event forward into needs_assessed
+// from one of these — never pull a confirmed/paid/assigned event back.
+const PRE_ASSESSMENT_STATUSES = ['inquiry_received', 'inquiry_accepted', 'meeting_scheduled', 'needs_assessed'];
+
 exports.updateNeedsAssessment = async (req, res) => {
   try {
     // Must run BEFORE the update below, which also forces status back to 'needs_assessed'
@@ -463,7 +468,8 @@ exports.updateNeedsAssessment = async (req, res) => {
       attendees,
       videoType,
       specialRequests,
-      status: 'needs_assessed',
+      // Only advance the status if the event hasn't already moved past this stage
+      ...(PRE_ASSESSMENT_STATUSES.includes(current.status) && { status: 'needs_assessed' }),
       'needsAssessment.attendees':        attendees,
       'needsAssessment.videoType':        videoType,
       'needsAssessment.specialRequests':  specialRequests,
@@ -1493,8 +1499,12 @@ exports.updateMessagingSettings = async (req, res) => {
 // ── Mark meeting as done ──────────────────────────────────────────────────────
 exports.markMeetingDone = async (req, res) => {
   try {
+    const current = await Event.findById(req.params.id).select('status');
+    if (!current) return res.status(404).json({ success: false, message: 'Event not found' });
+
     const event = await Event.findByIdAndUpdate(req.params.id, {
-      status: 'needs_assessed',
+      // Don't pull an event that's already past this stage back to needs_assessed
+      ...(PRE_ASSESSMENT_STATUSES.includes(current.status) && { status: 'needs_assessed' }),
       'scheduledMeeting.status': 'done',
     }, { new: true }).populate('client', 'name email');
 
