@@ -899,6 +899,12 @@ export default function ClientEventDetail() {
   const canRequestCancellation = CANCELLABLE_STATUSES.includes(event.status);
   const isCancellationPending = event.status === 'cancellation_requested';
 
+  // Cash arrangement: no payment records are kept, so the payment summary and
+  // payment prompts must read differently from the online-payment flow.
+  const cashConfirmed = !!event.cashArrangement?.confirmed;
+  const cashRequested = !!event.cashArrangement?.requested && !cashConfirmed;
+  const cashMode      = cashConfirmed || cashRequested;
+
   // Parse custom "Others" category description out of specialRequests
   const parsedCategory = (() => {
     if (event.eventCategory !== 'Others' || !event.specialRequests) {
@@ -1076,7 +1082,12 @@ export default function ClientEventDetail() {
             Your quotation has been approved! To proceed, please pay the <strong className="text-white">50% downpayment</strong> within a day.
             Our team cannot be assigned until payment is received and verified.
           </p>
-          {paymentSummary?.totalAmount > 0 && (
+          {cashRequested && (
+            <p className="mt-3 text-yellow-400 text-sm">
+              You chose to pay in cash — our team will confirm the arrangement shortly.
+            </p>
+          )}
+          {paymentSummary?.totalAmount > 0 && !cashRequested && (
             <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="text-sm">
                 <span className="text-white/50">Required: </span>
@@ -1092,8 +1103,12 @@ export default function ClientEventDetail() {
 
       {event.status === 'downpayment_paid' && (
         <div className="p-4 bg-teal-500/10 border border-teal-500/30 rounded-xl">
-          <p className="text-teal-400 font-semibold"> Downpayment Confirmed</p>
-          <p className="text-white/50 text-sm mt-0.5">Your 50% downpayment has been received. We are now assigning your team.</p>
+          <p className="text-teal-400 font-semibold">{cashConfirmed ? ' Cash Arrangement Confirmed' : ' Downpayment Confirmed'}</p>
+          <p className="text-white/50 text-sm mt-0.5">
+            {cashConfirmed
+              ? 'Your cash payment arrangement is confirmed. We are now assigning your team.'
+              : 'Your 50% downpayment has been received. We are now assigning your team.'}
+          </p>
         </div>
       )}
 
@@ -1117,7 +1132,12 @@ export default function ClientEventDetail() {
           <p className="text-white/50 text-sm mt-1">
             Your event is complete! Please settle the remaining balance to receive your deliverables.
           </p>
-          {paymentSummary?.balance > 0 && (
+          {cashConfirmed && (
+            <p className="mt-3 text-yellow-400 text-sm">
+              Please settle your payment in cash directly with our team. They will mark it as paid once received.
+            </p>
+          )}
+          {paymentSummary?.balance > 0 && !cashConfirmed && (
             <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="text-sm">
                 <span className="text-white/50">Balance: </span>
@@ -1226,7 +1246,40 @@ export default function ClientEventDetail() {
             <ServiceBadges services={event.services} size="lg" />
           </div>
 
-          {paymentSummary && paymentSummary.quotation && (
+          {paymentSummary && paymentSummary.quotation && cashMode && (
+            <div className="card">
+              <h3 className="section-title mb-3">Payment Summary</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/50">Total Amount</span>
+                  <span className="text-white font-medium">{formatCurrency(paymentSummary.totalAmount)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/50">Payment Method</span>
+                  <span className="text-yellow-400 font-medium">Cash</span>
+                </div>
+                <div className="flex justify-between text-sm border-t border-white/10 pt-2">
+                  <span className="text-white/50">Status</span>
+                  <span className={`font-bold ${cashConfirmed ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {event.status === 'completed_paid'
+                      ? 'Paid in cash'
+                      : cashConfirmed
+                        ? 'Cash arrangement confirmed'
+                        : 'Cash requested — awaiting confirmation'}
+                  </span>
+                </div>
+              </div>
+              <p className="text-white/40 text-xs mt-3">
+                {event.status === 'completed_paid'
+                  ? 'Your payment was received in cash. Thank you!'
+                  : cashConfirmed
+                    ? 'You will pay our team directly in cash and receive an official receipt.'
+                    : 'Our team will confirm your cash arrangement shortly.'}
+              </p>
+            </div>
+          )}
+
+          {paymentSummary && paymentSummary.quotation && !cashMode && (
             <div className="card">
               <h3 className="section-title mb-3">Payment Summary</h3>
               <div className="space-y-2">
