@@ -7,7 +7,7 @@ import {
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
 import NotificationPanel from '../shared/NotificationPanel';
-import { useTheme, ThemeToggle } from '../shared/theme';
+import { useTheme } from '../shared/theme';
 
 const links = [
   { to: '/client', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -28,7 +28,7 @@ export default function ClientLayout() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef(null);
   const navigate = useNavigate();
-  const { theme, toggle: toggleTheme } = useTheme('client');
+  useTheme('client'); // keeps the saved light/dark theme applied on every page; it's changed from the Profile page
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -135,7 +135,6 @@ export default function ClientLayout() {
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex-1" />
-          <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <div className="relative">
             <button onClick={() => setShowNotifs(!showNotifs)}
               className="relative p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors">

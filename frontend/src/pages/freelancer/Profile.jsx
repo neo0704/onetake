@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
   User, Mail, Phone, MapPin, Calendar, Save, Edit3, X,
-  CheckCircle, Facebook, Instagram, AlertCircle, DollarSign, KeyRound, Camera, Maximize2
+  CheckCircle, Facebook, Instagram, AlertCircle, DollarSign, KeyRound, Camera, Maximize2, Sun, Moon
 } from 'lucide-react';
 import api from '../../services/api';
 import useAuthStore from '../../store/authStore';
 import { LoadingSpinner } from '../../components/shared';
 import ChangePasswordModal from '../../components/shared/ChangePasswordModal';
+import { useTheme } from '../../components/shared/theme';
 import toast from 'react-hot-toast';
 import { ProfileSkeleton } from '../../components/shared/Skeletons';
 
@@ -153,6 +154,9 @@ export default function FreelancerProfile() {
       toast.error(err.response?.data?.message || 'Failed to update rate');
     } finally { setSavingRate(false); }
   };
+
+  // ── Theme (light / dark) ───────────────────────────────────────────────────
+  const { theme, toggle: toggleTheme } = useTheme('freelancer');
 
   // ── Email notification preference ──────────────────────────────────────────
   const [emailNotifs, setEmailNotifs]     = useState(null); // null = not loaded yet
@@ -529,6 +533,25 @@ export default function FreelancerProfile() {
               </div>
             )}
             {prefsError && <p className="text-red-400 text-xs mt-2">{prefsError}</p>}
+          </div>
+
+          {/* Theme */}
+          <div className="card">
+            <h3 className="section-title mb-1">Theme</h3>
+            <p className="text-white/40 text-xs mb-3">Choose how OneTake looks for you.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[['dark', 'Dark', Moon], ['light', 'Light', Sun]].map(([value, label, Icon]) => (
+                <button key={value} type="button"
+                  onClick={() => { if (theme !== value) toggleTheme(); }}
+                  aria-pressed={theme === value}
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors
+                    ${theme === value
+                      ? 'border-primary bg-primary/20 text-white'
+                      : 'border-white/10 text-white/60 hover:bg-white/5'}`}>
+                  <Icon className="w-4 h-4" /> {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {!editMode ? (

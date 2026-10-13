@@ -7,7 +7,7 @@ import {
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
 import NotificationPanel from '../shared/NotificationPanel';
-import { useTheme, ThemeToggle } from '../shared/theme';
+import { useTheme } from '../shared/theme';
 
 const LINKS = [
   { to: '/freelancer',          icon: LayoutDashboard, label: 'Dashboard',  end: true },
@@ -23,7 +23,7 @@ export default function FreelancerLayout() {
   const { notifications } = useNotificationStore();
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const navigate = useNavigate();
-  const { theme, toggle: toggleTheme } = useTheme('freelancer');
+  useTheme('freelancer'); // keeps the saved light/dark theme applied on every page; it's changed from the Profile page
 
   const [sidebarOpen,   setSidebarOpen]   = useState(false);   // mobile slide-in
   const [collapsed,     setCollapsed]     = useState(false);   // desktop rail collapse (pinned)
@@ -169,7 +169,6 @@ export default function FreelancerLayout() {
           </button>
 
           <div className="flex-1" />
-          <ThemeToggle theme={theme} onToggle={toggleTheme} />
 
           {/* Notification Bell */}
           <div className="relative">

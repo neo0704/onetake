@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Mail, Camera, Trash2, Save, Maximize2, X } from 'lucide-react';
+import { Mail, Camera, Trash2, Save, Maximize2, X, Sun, Moon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { formatDate } from '../../utils/helpers';import useAuthStore from '../../store/authStore'; // adjust path if needed
 import { Bone } from '../../components/shared/Skeletons';
+import { useTheme } from '../../components/shared/theme';
 
 const EMPTY = { name: '', email: '', phone: '', company: '', address: '' };
 
@@ -115,6 +116,9 @@ export default function ClientProfile() {
       setAvatarBusy(false);
     }
   };
+
+  // ── Theme (light / dark) ───────────────────────────────────────────────────
+  const { theme, toggle: toggleTheme } = useTheme('client');
 
   // ── Email notification preference ──────────────────────────────────────────
   const [enabled, setEnabled] = useState(null); // null = not loaded yet
@@ -337,6 +341,25 @@ export default function ClientProfile() {
             </div>
           </>
         )}
+      </div>
+
+      {/* ── Theme ───────────────────────────────────────────────────────── */}
+      <div className="card">
+        <h3 className="section-title mb-1">Theme</h3>
+        <p className="text-white/40 text-xs mb-3">Choose how OneTake looks for you.</p>
+        <div className="grid grid-cols-2 gap-2">
+          {[['dark', 'Dark', Moon], ['light', 'Light', Sun]].map(([value, label, Icon]) => (
+            <button key={value} type="button"
+              onClick={() => { if (theme !== value) toggleTheme(); }}
+              aria-pressed={theme === value}
+              className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors
+                ${theme === value
+                  ? 'border-primary bg-primary/20 text-white'
+                  : 'border-white/10 text-white/60 hover:bg-white/5'}`}>
+              <Icon className="w-4 h-4" /> {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       </div>
