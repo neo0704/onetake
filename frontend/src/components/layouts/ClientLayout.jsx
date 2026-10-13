@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Plus, CalendarDays, FileText,
-  CreditCard, Video, LogOut, Menu, X, Bell
+  CreditCard, Video, LogOut, Menu, X, Bell, User
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
@@ -25,6 +25,8 @@ export default function ClientLayout() {
   const [collapsed,     setCollapsed]     = useState(false);   // desktop rail collapse (pinned)
   const [hoverExpanded, setHoverExpanded] = useState(false);   // temp expand on hover, only when collapsed
   const [showNotifs,    setShowNotifs]    = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef(null);
   const navigate = useNavigate();
   const { theme, toggle: toggleTheme } = useTheme('client');
 
@@ -32,6 +34,16 @@ export default function ClientLayout() {
 
   // Visually expanded = pinned open, or collapsed-but-hovered
   const expanded = !collapsed || hoverExpanded;
+
+  // Close the small profile menu when clicking anywhere outside it
+  useEffect(() => {
+    if (!showProfileMenu) return;
+    const handler = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) setShowProfileMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showProfileMenu]);
 
   return (
     <div className="flex h-screen bg-[#0f0f1a] overflow-hidden">
@@ -79,9 +91,9 @@ export default function ClientLayout() {
         <div
           onMouseEnter={() => collapsed && setHoverExpanded(true)}
           className="px-3 py-4 border-t border-white/10">
-          <NavLink to="/client/profile" title={!expanded ? 'View profile' : undefined}
-            onClick={() => setSidebarOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}>
+          <div className="relative" ref={profileMenuRef}>
+          <button type="button" onClick={() => setShowProfileMenu(o => !o)} title="Profile menu"
+            className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg outline-none ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}>
             {user?.avatar ? (
               <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
             ) : (
@@ -93,7 +105,17 @@ export default function ClientLayout() {
               <p className="text-sm font-medium text-white truncate">{user?.name}</p>
               <p className="text-xs text-white/40">Client</p>
             </div>
-          </NavLink>
+          </button>
+            {showProfileMenu && (
+              <div className="absolute bottom-full left-3 mb-2 w-44 rounded-xl bg-dark-800 border border-white/10 shadow-2xl p-1.5 z-50">
+                <button type="button"
+                  onClick={() => { setShowProfileMenu(false); setSidebarOpen(false); navigate('/client/profile'); }}
+                  className="btn-ghost w-full text-sm justify-start">
+                  <User className="w-4 h-4 flex-shrink-0" /> Profile
+                </button>
+              </div>
+            )}
+          </div>
           <button onClick={handleLogout} title={!expanded ? 'Logout' : undefined}
             className={`btn-ghost w-full mt-2 text-sm ${!expanded ? 'lg:justify-center' : ''}`}>
             <LogOut className="w-4 h-4 flex-shrink-0" /> <span className={!expanded ? 'lg:hidden' : ''}>Logout</span>
