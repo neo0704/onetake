@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CreditCard, Plus, X, Smartphone, Building2, Wallet, QrCode, Clock } from 'lucide-react';
+import { CreditCard, Plus, X, Smartphone, Building2, Wallet, QrCode, Clock, Lock } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
 import { formatDate, formatCurrency } from '../../utils/helpers';
@@ -203,11 +203,16 @@ export default function ClientPayments() {
     if (!summary?.quotation) return '';
     const total = summary.totalAmount || 0;
     const paid  = summary.totalPaid   || 0;
-    if (type === 'downpayment') return (total * 0.5).toString();
-    if (type === 'balance')     return Math.max(0, total - paid).toString();
-    if (type === 'full')        return total.toString();
+    const toPesos = (n) => (Math.round(n * 100) / 100).toFixed(2);
+    if (type === 'downpayment') return toPesos(total * 0.5);
+    if (type === 'balance')     return toPesos(Math.max(0, total - paid));
+    if (type === 'full')        return toPesos(total);
     return '';
   };
+
+  // The amount is always derived from the quotation, never from user input.
+  // The form field is read-only and this value is what gets confirmed and submitted.
+  const fixedAmount = calcAmount(form.type, paySummary);
 
   const onTypeChange = (type) => {
     setForm(f => ({ ...f, type, amount: calcAmount(type, paySummary) }));
@@ -238,6 +243,11 @@ export default function ClientPayments() {
       toast.error('Please attach proof of payment (screenshot or receipt).');
       return;
     }
+    if (!fixedAmount || parseFloat(fixedAmount) <= 0) {
+      toast.error('The payment amount could not be determined for this project.');
+      return;
+    }
+    setForm(f => ({ ...f, amount: fixedAmount }));
     setShowConfirm(true);
   };
 
@@ -257,7 +267,7 @@ export default function ClientPayments() {
         return;
       }
       const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
+      Object.entries({ ...form, amount: fixedAmount }).forEach(([k, v]) => { if (v) fd.append(k, v); });
       if (proofFile) fd.append('proof', proofFile);
       await api.post('/payments', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       toast.success('Payment submitted. Awaiting verification.');
@@ -540,11 +550,20 @@ export default function ClientPayments() {
           {/* Amount (not needed for cash) */}
           {!isCash && <div>
             <label className="label">Amount (₱) *
-              {paySummary && <span className="text-primary/70 text-xs ml-2 font-normal">auto-filled</span>}
+              <span className="text-primary/70 text-xs ml-2 font-normal inline-flex items-center gap-1">
+                <Lock className="w-3 h-3" /> fixed
+              </span>
             </label>
-            <input type="number" min="1" step="0.01" className="input" placeholder="0.00"
-              value={form.amount}
-              onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required />
+            <input type="text" readOnly tabIndex={-1} aria-readonly="true"
+              className="input cursor-not-allowed opacity-80 select-none"
+              placeholder="0.00"
+              value={fixedAmount}
+              required />
+            <p className="text-white/40 text-xs mt-1.5">
+              {form.type === 'downpayment'
+                ? 'This is 50% of your total package and cannot be changed.'
+                : 'This is your exact remaining balance and cannot be changed.'}
+            </p>
           </div>}
 
           {/* Payment method */}
@@ -683,7 +702,7 @@ export default function ClientPayments() {
               },
               {
                 label: 'Amount',
-                value: form.amount ? formatCurrency(parseFloat(form.amount)) : '—',
+                value: fixedAmount ? formatCurrency(parseFloat(fixedAmount)) : '-',
                 highlight: true,
               },
               {
