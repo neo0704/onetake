@@ -40,7 +40,8 @@ exports.getFinancialSummary = async (req, res) => {
     }
 
     const payments = await Payment.find({ status: 'verified', ...dateQuery })
-      .populate('event', 'eventName eventDate');
+      .populate('event', 'eventName eventDate')
+      .populate('client', 'name');
 
     const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
     const downpayments = payments.filter(p => p.type === 'downpayment').reduce((sum, p) => sum + p.amount, 0);

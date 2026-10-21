@@ -22,8 +22,16 @@ const RANGES = [
 const toYMD = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+// Returns the startDate / endDate params for a range. 'all' sends no dates at all.
+// endDate is tomorrow so a backend that reads it as midnight still includes today's payments.
+const getParams = (rangeKey) => {
+  if (rangeKey === 'all') return {};
+  const end = new Date();
+  end.setDate(end.getDate() + 1);
+  return { startDate: getStartDate(rangeKey), endDate: toYMD(end) };
+};
+
 const getStartDate = (rangeKey) => {
-  if (rangeKey === 'all') return null;
   const r = RANGES.find(x => x.key === rangeKey) || RANGES[1];
   const d = new Date();
   if (r.days) {
@@ -56,8 +64,7 @@ export default function AdminReports() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    const startDate = getStartDate(range);
-    api.get('/reports/financial', { params: startDate ? { startDate } : {} })
+    api.get('/reports/financial', { params: getParams(range) })
       .then(({ data }) => { if (!cancelled) setFinancial(data); })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false); });
