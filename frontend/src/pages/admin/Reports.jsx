@@ -8,6 +8,34 @@ import { ReportsSkeleton } from '../../components/shared/Skeletons';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b'];
 
+// Quick date ranges. Each one runs from X ago up to today.
+const RANGES = [
+  { key: 'week',   label: 'Week',     days: 7 },
+  { key: 'month',  label: 'Month',    months: 1 },
+  { key: '3month', label: '3 Months', months: 3 },
+  { key: '6month', label: '6 Months', months: 6 },
+  { key: 'year',   label: 'Year',     months: 12 },
+  { key: 'all',    label: 'All' },   // no date filter
+];
+
+// yyyy-mm-dd in local time (toISOString would shift the day for users ahead of UTC)
+const toYMD = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+const getStartDate = (rangeKey) => {
+  if (rangeKey === 'all') return null;
+  const r = RANGES.find(x => x.key === rangeKey) || RANGES[1];
+  const d = new Date();
+  if (r.days) {
+    d.setDate(d.getDate() - r.days);
+  } else {
+    const day = d.getDate();
+    d.setMonth(d.getMonth() - r.months);
+    if (d.getDate() !== day) d.setDate(0); // e.g. Mar 31 minus 1 month -> Feb 28/29
+  }
+  return toYMD(d);
+};
+
 // Tooltip built from the app's themed classes so it follows light/dark mode
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -22,22 +50,22 @@ function ChartTooltip({ active, payload, label }) {
 export default function AdminReports() {
   const [financial, setFinancial] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [range, setRange] = useState('month');
   const [activeIdx, setActiveIdx] = useState(null); // hovered bar
 
-  const fetch = async () => {
+  useEffect(() => {
+    let cancelled = false;
     setLoading(true);
-    const params = {};
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
-    const { data } = await api.get('/reports/financial', { params });
-    setFinancial(data);
-    setLoading(false);
-  };
-  useEffect(() => { fetch(); }, []);
+    const startDate = getStartDate(range);
+    api.get('/reports/financial', { params: startDate ? { startDate } : {} })
+      .then(({ data }) => { if (!cancelled) setFinancial(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [range]);
 
-  if (loading) return <ReportsSkeleton />;
+  // Full skeleton only on the very first load; later range changes keep the page in place
+  if (loading && !financial) return <ReportsSkeleton />;
   const s = financial?.summary || {};
 
   const chartData = [
@@ -50,11 +78,17 @@ export default function AdminReports() {
     <div className="space-y-5 animate-fade-in">
       <PageHeader title="Reports & Analytics" />
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1 sm:flex-none min-w-0"><label className="label">Start Date</label><input type="date" className="input w-full" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
-        <div className="flex-1 sm:flex-none min-w-0"><label className="label">End Date</label><input type="date" className="input w-full" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
-        <div className="flex items-end"><button onClick={fetch} className="btn-primary w-full sm:w-auto justify-center">Apply</button></div>
+      <div role="group" aria-label="Report period" className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+        {RANGES.map(r => (
+          <button key={r.key} type="button" aria-pressed={range === r.key}
+            onClick={() => setRange(r.key)}
+            className={`${range === r.key ? 'btn-primary' : 'btn-secondary'} justify-center`}>
+            {r.label}
+          </button>
+        ))}
       </div>
+
+      <div className={`space-y-5 transition-opacity ${loading ? 'opacity-60 pointer-events-none' : ''}`} aria-busy={loading}>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Total Revenue" value={formatCurrency(s.totalRevenue || 0)} icon={TrendingUp} color="bg-emerald-500/20 text-emerald-600" />
@@ -137,6 +171,8 @@ export default function AdminReports() {
           </table>
           {(financial?.payments || []).length === 0 && <p className="text-center text-white/40 py-8">No payment data</p>}
         </div>
+      </div>
+
       </div>
     </div>
   );
