@@ -11,13 +11,34 @@ import { TablePageSkeleton } from '../../components/shared/Skeletons';
 const API_ORIGIN = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 const avatarUrl = (a) => (!a ? null : /^https?:\/\//i.test(a) ? a : `${API_ORIGIN}${a}`);
 
+// ── Input limits for the Create User form (the server enforces the same rules) ──
+const NAME_RE  = /^[\p{L}][\p{L}\p{M}\s.'-]*$/u;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const EMPTY_FORM = { name: '', email: '', password: '', phone: '', role: 'client' };
+
+// Returns { error } or { data } with trimmed / normalised values
+const validateUserForm = (f) => {
+  const name  = f.name.trim().replace(/\s+/g, ' ');
+  const email = f.email.trim().toLowerCase();
+  const phone = f.phone.trim().replace(/[\s()-]/g, '');
+  const pw    = f.password;
+
+  if (name.length < 2 || name.length > 60) return { error: 'Name must be 2 to 60 characters.' };
+  if (!NAME_RE.test(name)) return { error: 'Name can only have letters, spaces, periods, apostrophes and hyphens.' };
+  if (email.length > 100 || !EMAIL_RE.test(email)) return { error: 'Enter a valid email address (max 100 characters).' };
+  if (pw.length < 8 || pw.length > 64) return { error: 'Password must be 8 to 64 characters.' };
+  if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return { error: 'Password must include at least one letter and one number.' };
+  if (phone && !/^\+?\d{7,15}$/.test(phone)) return { error: 'Phone number must be 7 to 15 digits (it can start with +).' };
+  return { data: { ...f, name, email, phone } };
+};
+
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState('all');
   const [pendingOnly, setPendingOnly] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'client' });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [actingOn, setActingOn] = useState(null); // user id currently being approved/rejected
   const [viewingUser, setViewingUser] = useState(null);
   const [zoomSrc, setZoomSrc] = useState(null);
@@ -33,10 +54,12 @@ export default function AdminUsers() {
 
   const create = async (e) => {
     e.preventDefault();
+    const { error, data: clean } = validateUserForm(form);
+    if (error) { toast.error(error); return; }
     try {
-      await api.post('/users', form);
+      await api.post('/users', clean);
       toast.success('User created!');
-      setShowModal(false); fetch();
+      setShowModal(false); setForm(EMPTY_FORM); fetch();
     } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
   };
 
@@ -213,13 +236,13 @@ export default function AdminUsers() {
                 <tr key={u._id} className="table-row">
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">{u.name[0]}</div>
-                      <span className="text-white font-medium">{u.name}</span>
+                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">{u.name[0]}</div>
+                      <span className="text-white font-medium truncate max-w-[200px]" title={u.name}>{u.name}</span>
                     </div>
                   </td>
-                  <td className="py-3 pr-4 text-white/60">{u.email}</td>
+                  <td className="py-3 pr-4 text-white/60"><div className="truncate max-w-[220px]" title={u.email}>{u.email}</div></td>
                   <td className="py-3 pr-4"><span className={`badge capitalize ${u.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : u.role === 'freelancer' ? 'bg-blue-500/20 text-blue-400' : 'bg-teal-500/20 text-teal-400'}`}>{u.role}</span></td>
-                  <td className="py-3 pr-4 text-white/50">{u.phone || '—'}</td>
+                  <td className="py-3 pr-4 text-white/50"><div className="truncate max-w-[140px]" title={u.phone}>{u.phone || '—'}</div></td>
                   <td className="py-3 pr-4 text-white/40 text-xs">{formatDate(u.createdAt)}</td>
                   <td className="py-3 pr-4">
                     {isPending ? (
@@ -351,10 +374,26 @@ export default function AdminUsers() {
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create User">
         <form onSubmit={create} className="space-y-4">
-          <div><label className="label">Full Name</label><input className="input" value={form.name} onChange={e => setForm({...form,name:e.target.value})} required /></div>
-          <div><label className="label">Email</label><input type="email" className="input" value={form.email} onChange={e => setForm({...form,email:e.target.value})} required /></div>
-          <div><label className="label">Password</label><input type="password" className="input" value={form.password} onChange={e => setForm({...form,password:e.target.value})} required /></div>
-          <div><label className="label">Phone</label><input className="input" value={form.phone} onChange={e => setForm({...form,phone:e.target.value})} /></div>
+          <div>
+            <label className="label">Full Name</label>
+            <input className="input" maxLength={60} value={form.name} onChange={e => setForm({...form,name:e.target.value})} required />
+            <p className="text-white/40 text-xs mt-1">{form.name.length}/60 · letters only</p>
+          </div>
+          <div>
+            <label className="label">Email</label>
+            <input type="email" className="input" maxLength={100} value={form.email} onChange={e => setForm({...form,email:e.target.value})} required />
+          </div>
+          <div>
+            <label className="label">Password</label>
+            <input type="password" className="input" minLength={8} maxLength={64} value={form.password} onChange={e => setForm({...form,password:e.target.value})} required />
+            <p className="text-white/40 text-xs mt-1">8 to 64 characters, with at least one letter and one number</p>
+          </div>
+          <div>
+            <label className="label">Phone <span className="text-white/30">(Optional)</span></label>
+            <input className="input" type="tel" inputMode="tel" maxLength={20} placeholder="09XXXXXXXXX" value={form.phone}
+              onChange={e => setForm({...form, phone: e.target.value.replace(/[^\d+\s()-]/g, '')})} />
+            <p className="text-white/40 text-xs mt-1">Numbers only, 7 to 15 digits</p>
+          </div>
           <div><label className="label">Role</label>
             <select className="input" value={form.role} onChange={e => setForm({...form,role:e.target.value})}>
               <option value="client" className="bg-[#1a1a2e] text-white">Client</option>
@@ -363,7 +402,7 @@ export default function AdminUsers() {
             </select>
           </div>
           <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
-            <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1 justify-center">Cancel</button>
+            <button type="button" onClick={() => { setShowModal(false); setForm(EMPTY_FORM); }} className="btn-secondary flex-1 justify-center">Cancel</button>
             <button type="submit" className="btn-primary flex-1 justify-center">Create User</button>
           </div>
         </form>

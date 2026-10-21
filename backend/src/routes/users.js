@@ -37,6 +37,44 @@ const uploadToCloudinary = (buffer, folder) =>
   });
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── Input rules for admin-created / admin-edited users ─────────────────────
+const NAME_RE  = /^[\p{L}][\p{L}\p{M}\s.'-]*$/u;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const ROLES    = ['admin', 'client', 'freelancer'];
+
+// Checks only the fields that are present (pass { create: true } to require the core ones).
+// Returns { error } or { clean } with trimmed / normalised values.
+const validateUserFields = (body, { create = false } = {}) => {
+  const clean = {};
+
+  if (create || body.name !== undefined) {
+    const name = String(body.name ?? '').trim().replace(/\s+/g, ' ');
+    if (name.length < 2 || name.length > 60) return { error: 'Name must be 2 to 60 characters' };
+    if (!NAME_RE.test(name)) return { error: 'Name can only contain letters, spaces, periods, apostrophes and hyphens' };
+    clean.name = name;
+  }
+  if (create || body.email !== undefined) {
+    const email = String(body.email ?? '').trim().toLowerCase();
+    if (email.length > 100 || !EMAIL_RE.test(email)) return { error: 'Enter a valid email address (max 100 characters)' };
+    clean.email = email;
+  }
+  if (create || body.password !== undefined) {
+    const pw = String(body.password ?? '');
+    if (pw.length < 8 || pw.length > 64) return { error: 'Password must be 8 to 64 characters' };
+    if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return { error: 'Password must include at least one letter and one number' };
+    clean.password = pw;
+  }
+  if (body.phone !== undefined && String(body.phone).trim() !== '') {
+    const phone = String(body.phone).trim().replace(/[\s()-]/g, '');
+    if (!/^\+?\d{7,15}$/.test(phone)) return { error: 'Phone number must be 7 to 15 digits (it can start with +)' };
+    clean.phone = phone;
+  }
+  if (body.role !== undefined && body.role !== '' && !ROLES.includes(body.role)) {
+    return { error: 'Invalid role' };
+  }
+  return { clean };
+};
+
 // GET /api/users — admin gets all, filtered by role
 router.get('/', protect, authorize('admin'), async (req, res) => {
   try {
@@ -50,16 +88,20 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
 // POST /api/users — admin creates a user (the Users page "Add User" form calls this)
 router.post('/', protect, authorize('admin'), async (req, res) => {
   try {
-    const { name, email, password, phone, role } = req.body;
-    if (!name || !email || !password) {
+    const { role } = req.body;
+    if (!req.body.name || !req.body.email || !req.body.password) {
       return res.status(400).json({ success: false, message: 'Name, email and password are required' });
     }
-    const existing = await User.findOne({ email: String(email).toLowerCase() });
+    const { error, clean } = validateUserFields(req.body, { create: true });
+    if (error) return res.status(400).json({ success: false, message: error });
+
+    const { name, email, password, phone } = clean;
+    const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ success: false, message: 'Email already exists' });
 
     // Admin-created accounts are approved straight away (no pending state).
     const user = await User.create({
-      name, email: String(email).toLowerCase(), password, phone, role: role || 'client',
+      name, email, password, phone, role: role || 'client',
       accountStatus: 'active', isActive: true,
       emailVerified: true,
     });
@@ -171,10 +213,12 @@ router.delete('/profile/avatar', protect, async (req, res) => {
 router.put('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const { name, email, phone, role, isActive, skills, availability, rate, rateType } = req.body;
+    const { error, clean } = validateUserFields({ name, email, phone, role });
+    if (error) return res.status(400).json({ success: false, message: error });
     const update = {};
-    if (name)         update.name         = name;
-    if (email)        update.email        = email;
-    if (phone)        update.phone        = phone;
+    if (name)         update.name         = clean.name;
+    if (email)        update.email        = clean.email;
+    if (phone)        update.phone        = clean.phone;
     if (role)         update.role         = role;
     if (isActive !== undefined) update.isActive = isActive;
     if (skills)       update.skills       = skills;
