@@ -233,6 +233,19 @@ const css = `
   .ot-section-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(44px,5vw,68px); letter-spacing:3px; line-height:1; margin-bottom:14px; }
   .ot-section-body { font-size:15px; line-height:1.8; color:var(--muted); max-width:520px; }
 
+  /* ABOUT */
+  .ot-about-grid { display:grid; grid-template-columns:1.25fr 1fr; gap:48px; margin-top:12px; align-items:start; }
+  .ot-about-text p { font-size:15px; line-height:1.85; color:var(--muted); margin-bottom:16px; }
+  .ot-about-text p strong { color:#fff; font-weight:600; }
+  .ot-about-pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:24px; }
+  .ot-about-pill { padding:6px 14px; background:rgba(233,69,96,0.08); border:1px solid rgba(233,69,96,0.22); border-radius:100px; font-size:12px; font-weight:600; color:var(--red2); }
+  .ot-about-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:8px 28px; position:relative; overflow:hidden; }
+  .ot-about-card::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--red),transparent); }
+  .ot-about-fact { padding:20px 0; border-bottom:1px solid var(--border); }
+  .ot-about-fact:last-child { border-bottom:none; }
+  .ot-about-fact-label { font-size:10px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; color:var(--red); margin-bottom:6px; }
+  .ot-about-fact-value { font-size:15px; line-height:1.6; color:#fff; font-weight:500; }
+
   /* SERVICES */
   .ot-services-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:52px; }
   .ot-svc {
@@ -598,6 +611,7 @@ const css = `
     .ot-stat:nth-child(2) { border-right:none; }
     .ot-section { padding:72px 20px; }
     .ot-services-grid { grid-template-columns:1fr; }
+    .ot-about-grid { grid-template-columns:1fr; gap:28px; }
     .ot-how { padding:72px 20px; }
     .ot-steps { grid-template-columns:1fr; gap:28px; }
     .ot-steps::before { display:none; }
@@ -666,6 +680,7 @@ export default function HomePage() {
   const svcRefs  = useRef([]);
   const stepRefs = useRef([]);
   const portfolioRef = useRef(null);
+  const aboutRef     = useRef(null);
   const servicesRef  = useRef(null);
   const howRef       = useRef(null);
   const touchX       = useRef(null);
@@ -804,6 +819,7 @@ export default function HomePage() {
         </a>
         <div className="ot-nav-right">
           <div className="ot-nav-links">
+            <button className="ot-nav-link" onClick={() => goTo(aboutRef)}>About</button>
             <button className="ot-nav-link" onClick={() => goTo(servicesRef)}>Services</button>
             <button className="ot-nav-link" onClick={() => goTo(howRef)}>How it works</button>
             <button className="ot-nav-link" onClick={() => goTo(portfolioRef)}>Portfolio</button>
@@ -823,6 +839,7 @@ export default function HomePage() {
 
       {menuOpen && (
         <div className="ot-drawer">
+          <button onClick={() => goTo(aboutRef)}>About</button>
           <button onClick={() => goTo(servicesRef)}>Services</button>
           <button onClick={() => goTo(howRef)}>How it works</button>
           <button onClick={() => goTo(portfolioRef)}>Portfolio</button>
@@ -835,7 +852,7 @@ export default function HomePage() {
         <div className="ot-hero-glow" />
         <div className="ot-hero-grid" />
         <div className="ot-eyebrow">
-          <div className="ot-dot" /> OneTake — Client Portal
+          <div className="ot-dot" /> Onetake Portal
         </div>
         <h1 className="ot-hero-title">
           LIVE<span className="red">TAKE</span>
@@ -866,6 +883,45 @@ export default function HomePage() {
             <div className="ot-stat-label">{s.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* ABOUT */}
+      <div className="ot-section" id="about" ref={aboutRef}>
+        <div className="ot-section-tag">Who We Are</div>
+        <h2 className="ot-section-title">ABOUT LIVETAKE PRODUCTION</h2>
+        <div className="ot-about-grid">
+          <div className="ot-about-text">
+            <p>
+              <strong>Livetake Production</strong> is a professional broadcasting and media production company
+              based in Dasmariñas, Cavite. Established on September 4, 2019, we help clients capture and share
+              their most important moments with broadcast-quality results.
+            </p>
+            <p>
+              The company provides live event coverage, hybrid livestreaming, digital documentation, and video
+              production services — for corporate events, celebrations, and everything in between.
+            </p>
+            <div className="ot-about-pills">
+              <span className="ot-about-pill">Live Event Coverage</span>
+              <span className="ot-about-pill">Hybrid Livestreaming</span>
+              <span className="ot-about-pill">Digital Documentation</span>
+              <span className="ot-about-pill">Video Production</span>
+            </div>
+          </div>
+          <div className="ot-about-card">
+            <div className="ot-about-fact">
+              <div className="ot-about-fact-label">Established</div>
+              <div className="ot-about-fact-value">September 4, 2019</div>
+            </div>
+            <div className="ot-about-fact">
+              <div className="ot-about-fact-label">Based In</div>
+              <div className="ot-about-fact-value">Dasmariñas, Cavite</div>
+            </div>
+            <div className="ot-about-fact">
+              <div className="ot-about-fact-label">Company Type</div>
+              <div className="ot-about-fact-value">Professional Broadcasting &amp; Media Production</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* SERVICES */}
