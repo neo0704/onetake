@@ -14,16 +14,16 @@ const SERVICES = [
   },
   {
     name: 'Wedding, Debut & Birthday Photo/Video with Livestream',
-    desc: 'Comprehensive photography and videography for weddings, debuts, and birthdays — with live streaming included as standard.',
+    desc: 'Comprehensive photography and videography for weddings, debuts, and birthdays, with live streaming included as standard.',
   },
   {
     name: 'Remote & Virtual Livestreaming',
-    desc: 'Broadcast-quality streaming for hybrid events, virtual conferences, and online meetings — no matter where your audience is.',
+    desc: 'Broadcast-quality streaming for hybrid events, virtual conferences, and online meetings, no matter where your audience is.',
   },
 ];
 
 const STEPS = [
-  { n: '01', title: 'Submit Inquiry',   desc: 'Tell us about your event — date, venue, service, and category.' },
+  { n: '01', title: 'Submit Inquiry',   desc: 'Tell us about your event: date, venue, service, and category.' },
   { n: '02', title: 'Needs Assessment', desc: 'We meet online or face-to-face to finalize your requirements.' },
   { n: '03', title: 'Review Quotation', desc: 'Receive a custom quotation and approve your package.' },
   { n: '04', title: 'Confirm & Pay',    desc: 'Secure your booking with a 50% downpayment. Team gets assigned.' },
@@ -697,7 +697,7 @@ export default function HomePage() {
       .catch(() => setContent({ portfolio: [], featuredVideo: { isActive: false } }));
   }, []);
 
-  // Reviews the admin has chosen to feature — a separate, lightweight fetch
+  // Reviews the admin has chosen to feature. This is a separate, lightweight fetch
   // so a slow/failed reviews call never blocks the rest of the homepage.
   const [reviews, setReviews] = useState(null); // null = loading, [] = loaded-but-empty
   useEffect(() => {
@@ -770,7 +770,7 @@ export default function HomePage() {
   const lbPrev = () => setLightbox(l => ({ ...l, idx: (l.idx - 1 + l.images.length) % l.images.length }));
   const lbNext = () => setLightbox(l => ({ ...l, idx: (l.idx + 1) % l.images.length }));
 
-  // Don't jump the page to the top when opening a project — the window sits on top of the page
+  // Don't jump the page to the top when opening a project, since the window sits on top of the page
   const openProject = (proj) => { projOpener.current = document.activeElement; setActiveProj(proj); setVideoPlaying(false); };
 
   const goTo = (ref) => { setMenuOpen(false); ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
@@ -859,7 +859,7 @@ export default function HomePage() {
           <span className="ghost">PRODUCTIONS</span>
         </h1>
         <p className="ot-hero-sub">
-          Your events, captured flawlessly. From inquiry to final delivery — every step managed in one place.
+          Your events, captured flawlessly. From inquiry to final delivery, every step managed in one place.
         </p>
         <div className="ot-hero-btns">
           <button className="ot-cta-main" onClick={() => navigate('/client/inquiry')}>
@@ -898,7 +898,7 @@ export default function HomePage() {
             </p>
             <p>
               The company provides live event coverage, hybrid livestreaming, digital documentation, and video
-              production services — for corporate events, celebrations, and everything in between.
+              production services for corporate events, celebrations, and everything in between.
             </p>
             <div className="ot-about-pills">
               <span className="ot-about-pill">Live Event Coverage</span>
@@ -929,7 +929,7 @@ export default function HomePage() {
         <div className="ot-section-tag">What We Offer</div>
         <h2 className="ot-section-title">OUR SERVICES</h2>
         <p className="ot-section-body">
-          Professional production services tailored for every type of event — from intimate celebrations to large-scale corporate broadcasts.
+          Professional production services tailored for every type of event, from intimate celebrations to large-scale corporate broadcasts.
         </p>
         <div className="ot-services-grid">
           {SERVICES.map((svc, i) => (
@@ -991,7 +991,7 @@ export default function HomePage() {
                 />
               </div>
             ) : (
-              /* Thumbnail with play button — avoids auto-loading iframe */
+              /* Thumbnail with play button. Avoids auto-loading iframe */
               <div className="ot-video-thumb" aria-label="Play featured video" {...press(() => setVideoPlaying(true))}>
                 {getYTThumb(video.url)
                   ? <img src={getYTThumb(video.url)} alt="Video thumbnail" onError={e => { const el = e.currentTarget; el.onerror = null; el.src = el.src.replace('maxresdefault', 'hqdefault'); }} />
@@ -1009,7 +1009,7 @@ export default function HomePage() {
         <div className="ot-section-tag">Our Work</div>
         <h2 className="ot-section-title">PORTFOLIO</h2>
         <p className="ot-section-body">
-          A showcase of events we've proudly produced — from corporate briefings to large-scale hybrid broadcasts.
+          A showcase of events we've proudly produced, from corporate briefings to large-scale hybrid broadcasts.
         </p>
 
         {allProjects.length === 0 && (
@@ -1189,7 +1189,7 @@ export default function HomePage() {
           <h2 className="ot-cta-title">LET'S MAKE YOUR<em>EVENT UNFORGETTABLE</em></h2>
           <p className="ot-cta-body">
             Join hundreds of clients who trust Livetake Productions to capture their most important moments.
-            Your story deserves to be told right — in one take.
+            Your story deserves to be told right, in one take.
           </p>
           <div className="ot-cta-btns">
             <button className="ot-cta-main-lg" onClick={() => navigate('/client/inquiry')}>
