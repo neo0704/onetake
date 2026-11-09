@@ -117,14 +117,18 @@ export default function FreelancerSchedule() {
               const tod  = isToday(day);
               const sel  = selected === key;
               const past = new Date(year, month, day) < today;
+              // Cancelled projects don't block a date
+              const booked = evs.some(e => e.status !== 'cancelled');
 
               return (
                 <button key={day} onClick={() => setSelected(sel ? null : key)}
-                  className={`aspect-square rounded-xl flex flex-col items-center justify-start pt-1 pb-1 transition-all
-                    ${tod  ? 'bg-primary text-white font-bold ring-2 ring-primary/50' : ''}
-                    ${sel && !tod ? 'bg-white/20 ring-2 ring-white/30' : ''}
-                    ${!tod && !sel ? 'hover:bg-white/10 text-white/70 hover:text-white' : ''}
-                    ${past && !tod && evs.length === 0 ? 'opacity-40' : ''}`}>
+                  className={`aspect-square rounded-xl flex flex-col items-center justify-start pt-1 pb-1 border transition-all
+                    ${booked
+                      ? 'bg-red-500/20 border-red-500/40 hover:bg-red-500/30'
+                      : 'bg-green-500/15 border-green-500/25 hover:bg-green-500/25'}
+                    ${tod ? 'ring-2 ring-primary text-white font-bold' : 'text-white/80 hover:text-white'}
+                    ${sel && !tod ? 'ring-2 ring-white/60' : ''}
+                    ${past && !tod && !booked ? 'opacity-40' : ''}`}>
                   <span className="text-xs font-semibold leading-none">{day}</span>
                   {evs.length > 0 && (
                     <div className="flex gap-0.5 mt-1 flex-wrap justify-center">
@@ -139,12 +143,34 @@ export default function FreelancerSchedule() {
           </div>
 
           {/* Legend */}
-          <div className="mt-4 pt-4 border-t border-white/10 flex flex-wrap gap-3">
-            {[['bg-teal-400','Assigned'],['bg-primary','In Progress'],['bg-green-400','Confirmed'],['bg-orange-400','Completed']].map(([c, l]) => (
-              <div key={l} className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${c}`} /><span className="text-white/40 text-xs">{l}</span>
+          <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
+            {/* Day colours */}
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              <div className="flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded bg-green-500/15 border border-green-500/25" />
+                <span className="text-white/50 text-xs">Available</span>
               </div>
-            ))}
+              <div className="flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded bg-red-500/20 border border-red-500/40" />
+                <span className="text-white/50 text-xs">Has scheduled event</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded border-2 border-primary" />
+                <span className="text-white/50 text-xs">Today</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded border-2 border-white/60" />
+                <span className="text-white/50 text-xs">Selected</span>
+              </div>
+            </div>
+            {/* Status dots */}
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {[['bg-teal-400','Assigned'],['bg-primary','In Progress'],['bg-green-400','Confirmed'],['bg-orange-400','Completed']].map(([c, l]) => (
+                <div key={l} className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${c}`} /><span className="text-white/40 text-xs">{l}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Selected day panel */}
