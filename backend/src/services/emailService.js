@@ -51,7 +51,7 @@ const sendQuotationEmail = async (client, quotation) => {
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;padding:20px">
       <div style="background:#1a1a2e;color:white;padding:20px;border-radius:8px 8px 0 0;text-align:center">
-        <h1 style="margin:0;font-size:24px">🎬 OneTake Events</h1>
+        <h1 style="margin:0;font-size:24px">OneTake Events</h1>
         <p style="margin:5px 0;opacity:0.8">Your Quotation is Ready</p>
       </div>
       <div style="background:white;padding:30px;border-radius:0 0 8px 8px">
@@ -82,10 +82,10 @@ const sendPaymentConfirmationEmail = async (client, payment) => {
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
       <div style="background:#1a1a2e;color:white;padding:20px;text-align:center">
-        <h1>🎬 OneTake Events</h1>
+        <h1>OneTake Events</h1>
       </div>
       <div style="padding:30px">
-        <h2>Payment Verified ✅</h2>
+        <h2>Payment Verified</h2>
         <p>Hello ${client.name}, your payment has been verified!</p>
         <p><strong>Amount:</strong> ₱${payment.amount?.toLocaleString()}</p>
         <p><strong>Reference:</strong> ${payment.referenceNumber || 'N/A'}</p>
@@ -102,10 +102,10 @@ const sendEventReminderEmail = async (recipient, event, daysUntil) => {
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
       <div style="background:#1a1a2e;color:white;padding:20px;text-align:center">
-        <h1>🎬 OneTake Events</h1>
+        <h1>OneTake Events</h1>
       </div>
       <div style="padding:30px">
-        <h2>Event Reminder ⏰</h2>
+        <h2>Event Reminder</h2>
         <p>Hello ${recipient.name},</p>
         <p>This is a reminder that <strong>${event.eventName}</strong> is ${daysUntil === 0 ? 'TODAY!' : `in ${daysUntil} day(s)`}</p>
         <p><strong>Date:</strong> ${new Date(event.eventDate).toLocaleDateString()}</p>
@@ -120,7 +120,7 @@ const sendVerificationEmail = async (user, code) => {
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;padding:20px">
       <div style="background:#1a1a2e;color:white;padding:20px;border-radius:8px 8px 0 0;text-align:center">
-        <h1 style="margin:0;font-size:24px">🎬 OneTake Events</h1>
+        <h1 style="margin:0;font-size:24px">OneTake Events</h1>
         <p style="margin:5px 0;opacity:0.8">Verify your email</p>
       </div>
       <div style="background:white;padding:30px;border-radius:0 0 8px 8px;text-align:center">
@@ -141,7 +141,7 @@ const sendPasswordResetEmail = async (user, code) => {
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;padding:20px">
       <div style="background:#1a1a2e;color:white;padding:20px;border-radius:8px 8px 0 0;text-align:center">
-        <h1 style="margin:0;font-size:24px">🎬 OneTake Events</h1>
+        <h1 style="margin:0;font-size:24px">OneTake Events</h1>
         <p style="margin:5px 0;opacity:0.8">Reset your password</p>
       </div>
       <div style="background:white;padding:30px;border-radius:0 0 8px 8px;text-align:center">
@@ -163,7 +163,7 @@ const sendPasswordChangedAlert = async (user) => {
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;padding:20px">
       <div style="background:#1a1a2e;color:white;padding:20px;border-radius:8px 8px 0 0;text-align:center">
-        <h1 style="margin:0;font-size:24px">🎬 OneTake Events</h1>
+        <h1 style="margin:0;font-size:24px">OneTake Events</h1>
         <p style="margin:5px 0;opacity:0.8">Security Alert</p>
       </div>
       <div style="background:white;padding:30px;border-radius:0 0 8px 8px">
@@ -182,7 +182,7 @@ const sendAccountLockedAlert = async (user, lockMinutes) => {
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;padding:20px">
       <div style="background:#1a1a2e;color:white;padding:20px;border-radius:8px 8px 0 0;text-align:center">
-        <h1 style="margin:0;font-size:24px">🎬 OneTake Events</h1>
+        <h1 style="margin:0;font-size:24px">OneTake Events</h1>
         <p style="margin:5px 0;opacity:0.8">Security Alert</p>
       </div>
       <div style="background:white;padding:30px;border-radius:0 0 8px 8px">
@@ -201,7 +201,7 @@ const sendAccountDeletionCodeEmail = async (user, code) => {
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;padding:20px">
       <div style="background:#1a1a2e;color:white;padding:20px;border-radius:8px 8px 0 0;text-align:center">
-        <h1 style="margin:0;font-size:24px">🎬 OneTake Events</h1>
+        <h1 style="margin:0;font-size:24px">OneTake Events</h1>
         <p style="margin:5px 0;opacity:0.8">Confirm account deletion</p>
       </div>
       <div style="background:white;padding:30px;border-radius:0 0 8px 8px;text-align:center">

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   User, Mail, Phone, MapPin, Calendar, Save, Edit3, X,
-  CheckCircle, Facebook, Instagram, AlertCircle, DollarSign, KeyRound, Camera, Maximize2, Sun, Moon
+  CheckCircle, Facebook, Instagram, AlertCircle, DollarSign, KeyRound, Camera, Maximize2, Sun, Moon, Trash2, ShieldAlert, AlertTriangle
 } from 'lucide-react';
 import api from '../../services/api';
 import useAuthStore from '../../store/authStore';
@@ -24,7 +24,7 @@ const AVAIL_OPTIONS = [
 ];
 
 export default function FreelancerProfile() {
-  const { user, init } = useAuthStore();
+  const { user, init, logout } = useAuthStore();
 
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(false);
@@ -157,6 +157,67 @@ export default function FreelancerProfile() {
 
   // ── Theme (light / dark) ───────────────────────────────────────────────────
   const { theme, toggle: toggleTheme } = useTheme('freelancer');
+
+  // ── Account deletion (email code verification) ────────────────────────────
+  // Finished projects don't block deletion; anything else assigned to you does.
+  const FINISHED_STATUSES = ['completed_paid', 'cancelled'];
+  const [activeEvents, setActiveEvents] = useState(null); // null = unknown / not loaded
+  const [delOpen, setDelOpen]   = useState(false);
+  const [delStep, setDelStep]   = useState('confirm');     // 'confirm' | 'code'
+  const [delCode, setDelCode]   = useState('');
+  const [delBusy, setDelBusy]   = useState(false);
+  const [delError, setDelError] = useState('');
+  const [resendIn, setResendIn] = useState(0);
+
+  // Pre-check so the button can be disabled up front. The server enforces the same rule.
+  useEffect(() => {
+    api.get('/events')
+      .then(({ data }) => setActiveEvents((data.events || []).filter(e => !FINISHED_STATUSES.includes(e.status))))
+      .catch(() => setActiveEvents(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn(n => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
+  const hasActiveEvents = (activeEvents?.length || 0) > 0;
+
+  const openDelete = () => {
+    setDelStep('confirm'); setDelCode(''); setDelError(''); setResendIn(0);
+    setDelOpen(true);
+  };
+  const closeDelete = () => { if (!delBusy) setDelOpen(false); };
+
+  const sendDeleteCode = async () => {
+    setDelBusy(true); setDelError('');
+    try {
+      await api.post('/users/account/delete-request');
+      setDelStep('code'); setDelCode(''); setResendIn(60);
+      toast.success('Verification code sent to your email');
+    } catch (err) {
+      setDelError(err.response?.data?.message || 'Could not send the verification code');
+    } finally {
+      setDelBusy(false);
+    }
+  };
+
+  const confirmDelete = async (e) => {
+    e.preventDefault();
+    if (!/^\d{6}$/.test(delCode)) return setDelError('Enter the 6-digit code from your email');
+    setDelBusy(true); setDelError('');
+    try {
+      await api.delete('/users/account', { data: { code: delCode } });
+      toast.success('Your account has been deleted');
+      try { await logout?.(); } catch { /* account is already gone */ }
+      window.location.href = '/login';
+    } catch (err) {
+      setDelError(err.response?.data?.message || 'Failed to delete account');
+      setDelBusy(false);
+    }
+  };
 
   // ── Email notification preference ──────────────────────────────────────────
   const [emailNotifs, setEmailNotifs]     = useState(null); // null = not loaded yet
@@ -625,6 +686,27 @@ export default function FreelancerProfile() {
               </div>
             </>
           )}
+
+          {/* Delete account */}
+          <div className="card border border-red-500/20">
+            <h3 className="section-title mb-1 text-red-400">Delete account</h3>
+            <p className="text-white/40 text-xs mb-3">
+              Permanently delete your account and personal data. This can't be undone.
+            </p>
+            {hasActiveEvents && (
+              <div className="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  You have {activeEvents.length} active project{activeEvents.length === 1 ? '' : 's'}.
+                  Your account can only be deleted once all projects are completed or cancelled.
+                </span>
+              </div>
+            )}
+            <button type="button" onClick={openDelete} disabled={hasActiveEvents}
+              className="btn-secondary text-sm text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed w-full justify-center">
+              <Trash2 className="w-4 h-4" /> Delete my account
+            </button>
+          </div>
         </div>
       </div>
 
@@ -648,6 +730,68 @@ export default function FreelancerProfile() {
             onClick={(e) => e.stopPropagation()}
             className="max-w-full max-h-full rounded-xl object-contain cursor-default"
           />
+        </div>
+      )}
+
+      {delOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4" onClick={closeDelete}>
+          <div className="card w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-lg bg-red-500/20 flex items-center justify-center">
+                  <ShieldAlert className="w-5 h-5 text-red-400" />
+                </div>
+                <h3 className="text-white font-semibold">Delete your account</h3>
+              </div>
+              <button type="button" onClick={closeDelete} disabled={delBusy} className="text-white/40 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {delStep === 'confirm' ? (
+              <div className="space-y-4">
+                <p className="text-white/60 text-sm">
+                  This will permanently delete your account and personal data. You won't be able to log in or
+                  recover your project history. For your security, we'll email a verification code to{' '}
+                  <span className="text-white">{profile?.email || user?.email}</span>.
+                </p>
+                {delError && <p className="text-red-400 text-sm">{delError}</p>}
+                <div className="flex justify-end gap-2">
+                  <button type="button" className="btn-secondary text-sm" onClick={closeDelete} disabled={delBusy}>Cancel</button>
+                  <button type="button" className="btn-primary text-sm bg-red-500 hover:bg-red-600 disabled:opacity-50"
+                    onClick={sendDeleteCode} disabled={delBusy}>
+                    {delBusy ? 'Sending...' : 'Send verification code'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={confirmDelete} className="space-y-4">
+                <p className="text-white/60 text-sm">
+                  Enter the 6-digit code we sent to <span className="text-white">{profile?.email || user?.email}</span>. It expires shortly.
+                </p>
+                <input
+                  className="input text-center text-2xl tracking-[0.5em] font-mono"
+                  inputMode="numeric" autoComplete="one-time-code" maxLength={6} autoFocus
+                  placeholder="······" value={delCode}
+                  onChange={e => { setDelCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setDelError(''); }}
+                />
+                {delError && <p className="text-red-400 text-sm">{delError}</p>}
+                <div className="flex items-center justify-between gap-2">
+                  <button type="button" onClick={sendDeleteCode} disabled={delBusy || resendIn > 0}
+                    className="text-sm text-primary hover:underline disabled:text-white/30 disabled:no-underline">
+                    {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
+                  </button>
+                  <div className="flex gap-2">
+                    <button type="button" className="btn-secondary text-sm" onClick={closeDelete} disabled={delBusy}>Cancel</button>
+                    <button type="submit" disabled={delBusy || delCode.length !== 6}
+                      className="btn-primary text-sm bg-red-500 hover:bg-red-600 disabled:opacity-50">
+                      {delBusy ? 'Deleting...' : 'Delete account'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -237,8 +237,8 @@ const activeProjectsBlock = async (userId) => {
 // POST /api/users/account/delete-request — step 1: email a verification code
 router.post('/account/delete-request', protect, async (req, res) => {
   try {
-    if (req.user.role !== 'client') {
-      return res.status(403).json({ success: false, message: 'Only client accounts can be deleted this way' });
+    if (!['client', 'freelancer'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'This account type cannot be deleted this way' });
     }
     const user = await User.findById(req.user.id).select('name email deleteAccountCode');
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
@@ -277,8 +277,8 @@ router.post('/account/delete-request', protect, async (req, res) => {
 // DELETE /api/users/account — step 2: verify the code and delete the account
 router.delete('/account', protect, async (req, res) => {
   try {
-    if (req.user.role !== 'client') {
-      return res.status(403).json({ success: false, message: 'Only client accounts can be deleted this way' });
+    if (!['client', 'freelancer'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'This account type cannot be deleted this way' });
     }
     const code = String(req.body?.code ?? '').trim();
     if (!/^\d{6}$/.test(code)) {
