@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useLayoutEffect, useCallback, useSyncExternalStore } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,17 +30,32 @@ function getLoginTheme() {
   return theme;
 }
 
+// ── Shared theme state ──────────────────────────────────────────────────────
+// Every component that calls useTheme() (the layout AND the Profile page) must see
+// the SAME theme. If each call kept its own copy, changing the theme on the Profile
+// page would never reach the layout, and leaving the page would reset it to dark.
+let sharedTheme  = null;   // null until the first useTheme() call in a portal session
+let mountedCount = 0;      // how many components are currently using useTheme()
+const listeners  = new Set();
+
+const subscribe   = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
+const getSnapshot = () => sharedTheme ?? 'dark';
+const setShared   = (t) => {
+  if (sharedTheme === t) return;
+  sharedTheme = t;
+  listeners.forEach(fn => fn());
+};
+const initialTheme = (storageKey) =>
+  getLoginTheme() || (read(storageKey) === 'light' ? 'light' : 'dark');
+
 // Light/dark mode for one portal ('admin' | 'client' | 'freelancer').
 // Whatever theme the person had on the login form wins when they enter their
 // portal. After that, the portal remembers their choice for next time.
 export function useTheme(portal) {
   const storageKey = `onetake-theme-${portal}`;
 
-  const [theme, setTheme] = useState(() => {
-    const fromLogin = getLoginTheme();
-    if (fromLogin) return fromLogin;
-    return read(storageKey) === 'light' ? 'light' : 'dark';
-  });
+  if (sharedTheme === null) sharedTheme = initialTheme(storageKey);
+  const theme = useSyncExternalStore(subscribe, getSnapshot);
 
   // useLayoutEffect applies the theme before the first paint (no dark flash after login)
   useLayoutEffect(() => {
@@ -50,13 +65,25 @@ export function useTheme(portal) {
     write(storageKey, theme);
     write(LAST_KEY, theme);
     clear(LOGIN_KEY);   // login-form choice has been applied; don't reuse it later
-    return () => {
-      root.removeAttribute('data-portal');
-      root.setAttribute('data-theme', 'dark');
-    };
   }, [theme, portal, storageKey]);
 
-  const toggle = useCallback(() => setTheme(t => (t === 'light' ? 'dark' : 'light')), []);
+  // Reset to the dark public look only when the LAST component using the theme goes
+  // away (i.e. the portal is left / logout) — not when a single page like Profile unmounts.
+  useLayoutEffect(() => {
+    mountedCount += 1;
+    if (sharedTheme === null) setShared(initialTheme(storageKey));
+    return () => {
+      mountedCount -= 1;
+      if (mountedCount === 0) {
+        sharedTheme = null;
+        const root = document.documentElement;
+        root.removeAttribute('data-portal');
+        root.setAttribute('data-theme', 'dark');
+      }
+    };
+  }, [storageKey]);
+
+  const toggle = useCallback(() => setShared(sharedTheme === 'light' ? 'dark' : 'light'), []);
 
   return { theme, toggle };
 }
