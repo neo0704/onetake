@@ -280,9 +280,12 @@ export default function AdminEvents() {
                     key={key}
                     onClick={() => dayEvents.length > 0 && setSelectedDay(isSelected ? null : key)}
                     className={`min-h-[52px] sm:min-h-[84px] p-1 sm:p-1.5 rounded-lg text-left border transition-colors flex flex-col gap-1
-                      ${inMonth ? 'bg-white/[0.03]' : 'bg-transparent opacity-40'}
-                      ${isSelected ? 'border-primary' : 'border-white/5'}
-                      ${dayEvents.length > 0 ? 'hover:border-primary/40 cursor-pointer' : 'cursor-default'}`}
+                      ${dayEvents.length > 0 ? 'bg-red-500/20' : 'bg-green-500/15'}
+                      ${inMonth ? '' : 'opacity-40'}
+                      ${isSelected
+                        ? 'border-primary'
+                        : dayEvents.length > 0 ? 'border-red-500/40' : 'border-green-500/25'}
+                      ${dayEvents.length > 0 ? 'hover:border-red-400 cursor-pointer' : 'cursor-default'}`}
                   >
                     <span className={`text-[11px] sm:text-xs font-medium ${isToday ? 'w-5 h-5 flex items-center justify-center rounded-full bg-primary text-white' : 'text-white/50'}`}>
                       {d.getDate()}
@@ -291,7 +294,7 @@ export default function AdminEvents() {
                     {dayEvents.length > 0 && (
                       <div className="flex flex-wrap gap-0.5 sm:hidden">
                         {dayEvents.slice(0, 4).map(ev => (
-                          <span key={ev._id} className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          <span key={ev._id} className="w-1.5 h-1.5 rounded-full bg-red-400" />
                         ))}
                       </div>
                     )}
@@ -300,7 +303,7 @@ export default function AdminEvents() {
                       {visible.map(ev => (
                         <span
                           key={ev._id}
-                          className="text-[10px] leading-tight px-1 py-0.5 rounded bg-primary/20 text-primary-200 truncate"
+                          className="text-[10px] leading-tight px-1 py-0.5 rounded bg-red-500/30 text-red-100 truncate"
                           title={ev.eventName}
                         >
                           {ev.eventName}
@@ -313,6 +316,26 @@ export default function AdminEvents() {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 pt-3 border-t border-white/5 text-xs text-white/60">
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded bg-green-500/15 border border-green-500/25" />
+                Available
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded bg-red-500/20 border border-red-500/40" />
+                Booked (has scheduled event)
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-[9px] font-medium text-white">1</span>
+                Today
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded border border-primary" />
+                Selected day
+              </span>
             </div>
           </div>
 
