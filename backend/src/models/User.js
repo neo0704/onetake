@@ -86,6 +86,15 @@ const userSchema = new mongoose.Schema({
     expiresAt: { type: Date },
   },
 
+  // Self-service account deletion — a one-time code emailed to the user must
+  // be entered before the account is removed. Only a hash of the code is stored.
+  deleteAccountCode: {
+    code:      { type: String },
+    expiresAt: { type: Date },
+    sentAt:    { type: Date },
+    attempts:  { type: Number, default: 0 },
+  },
+
   // Freelancers require admin approval before they can log in — clients
   // and admins are 'active' immediately. Set to 'pending' on creation for
   // any user registering with role: 'freelancer' (see authController).

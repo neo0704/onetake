@@ -195,8 +195,28 @@ const sendAccountLockedAlert = async (user, lockMinutes) => {
   await sendEmail({ to: user.email, subject: 'Your OneTake account was temporarily locked', html });
 };
 
+// Account-security email — deliberately does NOT check wantsEmailNotifications().
+// Sent when a user asks to permanently delete their own account.
+const sendAccountDeletionCodeEmail = async (user, code) => {
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;padding:20px">
+      <div style="background:#1a1a2e;color:white;padding:20px;border-radius:8px 8px 0 0;text-align:center">
+        <h1 style="margin:0;font-size:24px">🎬 OneTake Events</h1>
+        <p style="margin:5px 0;opacity:0.8">Confirm account deletion</p>
+      </div>
+      <div style="background:white;padding:30px;border-radius:0 0 8px 8px;text-align:center">
+        <h2 style="color:#1a1a2e">Hello ${user.name},</h2>
+        <p>We received a request to <strong>permanently delete</strong> your OneTake account. Enter this code to confirm:</p>
+        <p style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#e94560;margin:24px 0">${code}</p>
+        <p style="color:#666;font-size:13px">This code expires in 10 minutes. If you did <strong>not</strong> request this, ignore this email and consider changing your password — your account has not been deleted.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail({ to: user.email, subject: `${code} is your OneTake account deletion code`, html });
+};
+
 module.exports = {
   sendEmail, sendQuotationEmail, sendPaymentConfirmationEmail,
   sendEventReminderEmail, sendVerificationEmail, sendPasswordResetEmail,
-  sendPasswordChangedAlert, sendAccountLockedAlert,
+  sendPasswordChangedAlert, sendAccountLockedAlert, sendAccountDeletionCodeEmail,
 };

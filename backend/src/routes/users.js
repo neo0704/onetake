@@ -7,6 +7,8 @@ const cloudinary = require('cloudinary').v2;
 const User    = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
 const { countUnfinishedProjects, unfinishedMessage } = require('../utils/userRecords');
+const crypto  = require('crypto');
+const { sendAccountDeletionCodeEmail } = require('../utils/emailService');
 
 // ── Cloudinary (permanent image storage) ───────────────────────────────────
 // Uses the same CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
@@ -204,6 +206,122 @@ router.delete('/profile/avatar', protect, async (req, res) => {
     ).select('-password');
 
     res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── Self-service account deletion (clients) ────────────────────────────────
+// Flow: POST /account/delete-request  → emails a 6-digit code
+//       DELETE /account { code }       → verifies the code, then deletes
+// These MUST stay above the '/:id' routes so 'account' isn't read as an id.
+const DELETE_CODE_TTL_MS   = 10 * 60 * 1000; // code valid for 10 minutes
+const DELETE_CODE_COOLDOWN = 60 * 1000;      // min gap between code emails
+const DELETE_MAX_ATTEMPTS  = 5;              // wrong guesses before the code is burned
+
+// Only a hash is stored, salted with the user id, so a DB leak doesn't expose live codes.
+const hashDeleteCode = (userId, code) =>
+  crypto.createHash('sha256').update(`${userId}:${code}`).digest('hex');
+
+// Returns a 409 payload if the user still has unfinished projects, else null.
+const activeProjectsBlock = async (userId) => {
+  const n = await countUnfinishedProjects(userId);
+  if (n === 0) return null;
+  return {
+    success: false,
+    code: 'USER_HAS_ACTIVE_PROJECTS',
+    message: `You still have ${n} active project${n === 1 ? '' : 's'}. You can delete your account once all projects are completed or cancelled.`,
+  };
+};
+
+// POST /api/users/account/delete-request — step 1: email a verification code
+router.post('/account/delete-request', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'client') {
+      return res.status(403).json({ success: false, message: 'Only client accounts can be deleted this way' });
+    }
+    const user = await User.findById(req.user.id).select('name email deleteAccountCode');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const blocked = await activeProjectsBlock(user._id);
+    if (blocked) return res.status(409).json(blocked);
+
+    const sentAt = user.deleteAccountCode?.sentAt;
+    if (sentAt && Date.now() - new Date(sentAt).getTime() < DELETE_CODE_COOLDOWN) {
+      return res.status(429).json({ success: false, message: 'Please wait a minute before requesting another code' });
+    }
+
+    const code = String(crypto.randomInt(100000, 1000000)); // 6 digits
+    await User.findByIdAndUpdate(user._id, {
+      deleteAccountCode: {
+        code:      hashDeleteCode(user._id, code),
+        expiresAt: new Date(Date.now() + DELETE_CODE_TTL_MS),
+        sentAt:    new Date(),
+        attempts:  0,
+      },
+    });
+
+    try {
+      await sendAccountDeletionCodeEmail(user, code);
+    } catch (mailErr) {
+      await User.findByIdAndUpdate(user._id, { $unset: { deleteAccountCode: 1 } });
+      return res.status(500).json({ success: false, message: 'Could not send the verification email. Please try again.' });
+    }
+
+    res.json({ success: true, message: 'Verification code sent' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// DELETE /api/users/account — step 2: verify the code and delete the account
+router.delete('/account', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'client') {
+      return res.status(403).json({ success: false, message: 'Only client accounts can be deleted this way' });
+    }
+    const code = String(req.body?.code ?? '').trim();
+    if (!/^\d{6}$/.test(code)) {
+      return res.status(400).json({ success: false, message: 'Enter the 6-digit code from your email' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const rec = user.deleteAccountCode;
+    if (!rec?.code || !rec.expiresAt || new Date(rec.expiresAt) < new Date()) {
+      return res.status(400).json({ success: false, message: 'This code has expired. Please request a new one.' });
+    }
+    if ((rec.attempts || 0) >= DELETE_MAX_ATTEMPTS) {
+      await User.findByIdAndUpdate(user._id, { $unset: { deleteAccountCode: 1 } });
+      return res.status(429).json({ success: false, message: 'Too many incorrect attempts. Please request a new code.' });
+    }
+
+    const expected = Buffer.from(rec.code, 'hex');
+    const given    = Buffer.from(hashDeleteCode(user._id, code), 'hex');
+    const ok = expected.length === given.length && crypto.timingSafeEqual(expected, given);
+    if (!ok) {
+      const attempts = (rec.attempts || 0) + 1;
+      if (attempts >= DELETE_MAX_ATTEMPTS) {
+        await User.findByIdAndUpdate(user._id, { $unset: { deleteAccountCode: 1 } });
+        return res.status(429).json({ success: false, message: 'Too many incorrect attempts. Please request a new code.' });
+      }
+      await User.findByIdAndUpdate(user._id, { $inc: { 'deleteAccountCode.attempts': 1 } });
+      return res.status(400).json({ success: false, message: `Incorrect code. ${DELETE_MAX_ATTEMPTS - attempts} attempt${DELETE_MAX_ATTEMPTS - attempts === 1 ? '' : 's'} left.` });
+    }
+
+    // Re-check right before deleting — a project may have been created since the code was sent
+    const blocked = await activeProjectsBlock(user._id);
+    if (blocked) return res.status(409).json(blocked);
+
+    // Best-effort: remove the avatar from Cloudinary
+    if (user.avatar?.includes('res.cloudinary.com')) {
+      const m = user.avatar.match(/\/upload\/(?:v\d+\/)?(.+?)\.[a-z0-9]+$/i);
+      if (m) await cloudinary.uploader.destroy(m[1]).catch(() => {});
+    }
+
+    await user.deleteOne();
+    res.json({ success: true, message: 'Account deleted' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
