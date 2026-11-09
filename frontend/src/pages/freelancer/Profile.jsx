@@ -454,9 +454,9 @@ export default function FreelancerProfile() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="label">Email Address *</label>
-                      <input type="email" className="input" value={form.email}
-                        onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+                      <label className="label">Email Address</label>
+                      <input type="email" className="input opacity-70 cursor-not-allowed" value={form.email} readOnly />
+                      <p className="text-white/30 text-xs mt-1">Your email can't be changed here.</p>
                     </div>
                     <div>
                       <label className="label">Phone Number</label>

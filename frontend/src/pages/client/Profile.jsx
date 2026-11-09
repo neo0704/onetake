@@ -54,18 +54,16 @@ export default function ClientProfile() {
   }, [userId]);
 
   const dirty = profile
-    ? Object.keys(EMPTY).some(k => (form[k] || '') !== (profile[k] || ''))
+    ? Object.keys(EMPTY).filter(k => k !== 'email').some(k => (form[k] || '') !== (profile[k] || ''))
     : false;
 
   const saveProfile = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return toast.error('Name is required');
-    if (!form.email.trim()) return toast.error('Email is required');
     setSavingProfile(true);
     try {
       const { data } = await api.put('/users/profile', {
         name:    form.name.trim(),
-        email:   form.email.trim(),
         phone:   form.phone.trim(),
         company: form.company.trim(),
         address: form.address.trim(),
@@ -286,8 +284,8 @@ export default function ClientProfile() {
               </div>
               <div>
                 <label className="label">Email</label>
-                <input type="email" className="input" value={form.email} required
-                  onChange={e => setForm({ ...form, email: e.target.value })} />
+                <input type="email" className="input opacity-70 cursor-not-allowed" value={form.email} readOnly />
+                <p className="text-white/30 text-xs mt-1">Your email can't be changed here.</p>
               </div>
               <div>
                 <label className="label">Phone</label>

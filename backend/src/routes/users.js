@@ -138,14 +138,8 @@ router.put('/profile', protect, async (req, res) => {
       if (req.body[k] !== undefined) update[k] = req.body[k];
     });
 
-    // Email change — check for duplicates
-    if (req.body.email && req.body.email !== req.user.email) {
-      const existing = await User.findOne({ email: req.body.email });
-      if (existing) {
-        return res.status(400).json({ success: false, message: 'Email already in use' });
-      }
-      update.email = req.body.email.toLowerCase();
-    }
+    // NOTE: email is intentionally NOT updated here — it can't be self-edited, so a user
+    // can't swap in a fake address. (Admins can still edit it from the Users page.)
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
