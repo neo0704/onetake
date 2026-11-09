@@ -8,7 +8,7 @@ const User    = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
 const { countUnfinishedProjects, unfinishedMessage } = require('../utils/userRecords');
 const crypto  = require('crypto');
-const { sendAccountDeletionCodeEmail } = require('../utils/emailService');
+const { sendAccountDeletionCodeEmail } = require('../services/emailService');
 
 // ── Cloudinary (permanent image storage) ───────────────────────────────────
 // Uses the same CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
