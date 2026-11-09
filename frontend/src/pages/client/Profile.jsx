@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Mail, Camera, Trash2, Save, Maximize2, X, Sun, Moon, AlertTriangle, ShieldAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import { formatDate } from '../../utils/helpers';import useAuthStore from '../../store/authStore'; // adjust path if needed
+import useAuthStore from '../../store/authStore'; // adjust path if needed
 import { Bone } from '../../components/shared/Skeletons';
 import { useTheme } from '../../components/shared/theme';
 
@@ -319,29 +319,6 @@ export default function ClientProfile() {
 
       {/* ── Right column ────────────────────────────────────────────────── */}
       <div className="space-y-6">
-
-      {/* Account summary */}
-      <div className="card">
-        <h3 className="section-title mb-4">Account</h3>
-        <dl className="space-y-3 text-sm">
-          <div className="flex items-center justify-between gap-3">
-            <dt className="text-white/40">Role</dt>
-            <dd className="text-white capitalize">{shown?.role || 'client'}</dd>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <dt className="text-white/40">Member since</dt>
-            <dd className="text-white">{shown?.createdAt ? formatDate(shown.createdAt) : '—'}</dd>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <dt className="text-white/40">Status</dt>
-            <dd>
-              <span className={`badge ${shown?.isActive === false ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
-                {shown?.isActive === false ? 'Inactive' : 'Active'}
-              </span>
-            </dd>
-          </div>
-        </dl>
-      </div>
 
       {/* ── Notifications ───────────────────────────────────────────────── */}
       <div className="card">
