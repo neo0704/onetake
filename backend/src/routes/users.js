@@ -9,6 +9,11 @@ const { protect, authorize } = require('../middleware/auth');
 const { countUnfinishedProjects, unfinishedMessage } = require('../utils/userRecords');
 const crypto  = require('crypto');
 const { sendAccountDeletionCodeEmail } = require('../services/emailService');
+const { notifyAdmins } = require('../services/notificationService');
+
+// Notification text ends up inside an HTML email, and this endpoint is public,
+// so anything that came from the user must be escaped first.
+const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // ── Cloudinary (permanent image storage) ───────────────────────────────────
 // Uses the same CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
@@ -89,7 +94,7 @@ router.post('/reactivation-request', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Enter a valid email address' });
     }
 
-    const user = await User.findOne({ email }).select('isActive accountStatus reactivationRequest');
+    const user = await User.findOne({ email }).select('name email isActive accountStatus reactivationRequest');
     // Only genuinely deactivated accounts; rejected freelancers are a different matter.
     if (!user || user.isActive || user.accountStatus !== 'active') return res.json(generic);
 
@@ -102,6 +107,19 @@ router.post('/reactivation-request', async (req, res) => {
     await User.findByIdAndUpdate(user._id, {
       reactivationRequest: { pending: true, message, requestedAt: new Date() },
     });
+
+    // Tell every admin. Not awaited, so the response time is the same whether or not
+    // the email belongs to a deactivated account. The user's free-text message is left
+    // out on purpose; admins read it on the Users page.
+    notifyAdmins({
+      sender:  user._id,
+      type:    'reactivation_request',
+      title:   'Reactivation request',
+      message: `${escapeHtml(user.name)} (${escapeHtml(user.email)}) is asking to have their deactivated account turned back on.`,
+      data:    { userId: user._id },
+      link:    '/admin/users',
+    }).catch(() => {});
+
     res.json(generic);
   } catch (err) { res.status(500).json({ success: false, message: 'Could not send your request. Please try again.' }); }
 });
