@@ -38,6 +38,21 @@ const STATS = [
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+const CONTACT_EMAIL = 'livetakeproductions@gmail.com';
+
+// Phones: let the normal mailto: link open the mail app.
+// Desktop: open Gmail's compose window in a new tab with the address filled in.
+function handleEmailClick(e) {
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) return;
+  e.preventDefault();
+  window.open(
+    `https://mail.google.com/mail/?view=cm&fs=1&to=${CONTACT_EMAIL}&su=${encodeURIComponent('Event Inquiry')}`,
+    '_blank',
+    'noopener,noreferrer'
+  );
+}
+
 function getEmbedUrl(url) {
   if (!url) return null;
   const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -1208,7 +1223,7 @@ export default function HomePage() {
         <div className="ot-footer-copy">© 2026 Livetake Productions · Dasmariñas, Cavite</div>
         <div className="ot-footer-contact">
           <a href="tel:+639068642868">0906 8642 868</a>
-          <a href="mailto:livetakeproductions@gmail.com">livetakeproductions@gmail.com</a>
+          <a href={`mailto:${CONTACT_EMAIL}`} onClick={handleEmailClick}>{CONTACT_EMAIL}</a>
         </div>
       </footer>
     </div>
