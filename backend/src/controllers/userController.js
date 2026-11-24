@@ -54,6 +54,19 @@ exports.toggleUserStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: "You can't deactivate your own account" });
     }
 
+    // Block DEACTIVATION (isActive true -> false) while the user still has unfinished
+    // projects. Reactivating is always allowed.
+    if (user.isActive) {
+      const unfinished = await countUnfinishedProjects(user._id);
+      if (unfinished > 0) {
+        return res.status(409).json({
+          success: false,
+          code: 'USER_HAS_ACTIVE_PROJECTS',
+          message: `Can't deactivate this account: it still has ${unfinished} unfinished project${unfinished > 1 ? 's' : ''}. Finish or reassign them first.`,
+        });
+      }
+    }
+
     // Use an update instead of user.save(): save() runs full validation and pre-save
     // hooks (e.g. password hashing), which can fail on older records and makes this
     // simple flag flip return a 500.
