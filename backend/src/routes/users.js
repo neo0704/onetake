@@ -113,7 +113,7 @@ router.post('/reactivation-request', async (req, res) => {
     // out on purpose; admins read it on the Users page.
     notifyAdmins({
       sender:  user._id,
-      type:    'reactivation_request',
+      type:    'general', // must be a value in Notification.js's type enum
       title:   'Reactivation request',
       message: `${escapeHtml(user.name)} (${escapeHtml(user.email)}) is asking to have their deactivated account turned back on.`,
       data:    { userId: user._id },
