@@ -1207,7 +1207,7 @@ export default function HomePage() {
         <div className="ot-footer-logo">ONE<em>TAKE</em></div>
         <div className="ot-footer-copy">© 2026 Livetake Productions · Dasmariñas, Cavite</div>
         <div className="ot-footer-contact">
-          <a href="tel:+639068642868">09XXXXXXXX</a>
+          <a href="tel:+639068642868">0906 8642 868</a>
           <a href="mailto:livetakeproductions@gmail.com">livetakeproductions@gmail.com</a>
         </div>
       </footer>
