@@ -77,6 +77,35 @@ const validateUserFields = (body, { create = false } = {}) => {
   return { clean };
 };
 
+// POST /api/users/reactivation-request — PUBLIC (a deactivated user can't log in, so no token).
+// Always answers with the same message so it can't be used to check whether an email is registered.
+const REACTIVATION_COOLDOWN_MS = 24 * 60 * 60 * 1000; // after a decline, wait 24h before asking again
+router.post('/reactivation-request', async (req, res) => {
+  const generic = { success: true, message: 'If this account is deactivated, your request has been sent to an administrator.' };
+  try {
+    const email   = String(req.body?.email ?? '').trim().toLowerCase();
+    const message = String(req.body?.message ?? '').trim().slice(0, 500);
+    if (email.length > 100 || !EMAIL_RE.test(email)) {
+      return res.status(400).json({ success: false, message: 'Enter a valid email address' });
+    }
+
+    const user = await User.findOne({ email }).select('isActive accountStatus reactivationRequest');
+    // Only genuinely deactivated accounts; rejected freelancers are a different matter.
+    if (!user || user.isActive || user.accountStatus !== 'active') return res.json(generic);
+
+    const rr = user.reactivationRequest || {};
+    if (rr.pending) return res.json(generic); // already waiting
+    if (rr.declinedAt && Date.now() - new Date(rr.declinedAt).getTime() < REACTIVATION_COOLDOWN_MS) {
+      return res.json(generic); // declined recently
+    }
+
+    await User.findByIdAndUpdate(user._id, {
+      reactivationRequest: { pending: true, message, requestedAt: new Date() },
+    });
+    res.json(generic);
+  } catch (err) { res.status(500).json({ success: false, message: 'Could not send your request. Please try again.' }); }
+});
+
 // GET /api/users — admin gets all, filtered by role
 router.get('/', protect, authorize('admin'), async (req, res) => {
   try {
@@ -368,13 +397,31 @@ router.put('/:id/toggle-status', protect, authorize('admin'), async (req, res) =
       }
     }
 
+    // Reactivating also clears any pending reactivation request.
+    const change = user.isActive
+      ? { isActive: false }
+      : { isActive: true, $unset: { reactivationRequest: 1 } };
+
     // findByIdAndUpdate instead of save(): skips full validation / pre-save hooks
     const updated = await User.findByIdAndUpdate(
       req.params.id,
-      { isActive: !user.isActive },
+      change,
       { new: true }
     ).select('-password');
 
+    res.json({ success: true, user: updated });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+// PUT /api/users/:id/reactivation-request/decline — admin turns down a reactivation request
+router.put('/:id/reactivation-request/decline', protect, authorize('admin'), async (req, res) => {
+  try {
+    const updated = await User.findByIdAndUpdate(
+      req.params.id,
+      { reactivationRequest: { pending: false, message: '', declinedAt: new Date() } },
+      { new: true }
+    ).select('-password');
+    if (!updated) return res.status(404).json({ success: false, message: 'User not found' });
     res.json({ success: true, user: updated });
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });

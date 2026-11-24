@@ -104,6 +104,15 @@ const userSchema = new mongoose.Schema({
     default: 'active',
   },
 
+  // Deactivated users can ask an admin to turn their account back on.
+  // 'pending' is true while a request is waiting; declinedAt starts a cooldown.
+  reactivationRequest: {
+    pending:     { type: Boolean, default: false },
+    message:     { type: String, default: '' },
+    requestedAt: { type: Date },
+    declinedAt:  { type: Date },
+  },
+
   // Set on every password change (initial signup, change-password, or
   // reset-password). Used to invalidate any JWT issued before this moment —
   // see middleware/auth.js — so a stolen/old token stops working the instant

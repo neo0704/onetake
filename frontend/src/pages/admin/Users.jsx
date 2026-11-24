@@ -79,6 +79,19 @@ export default function AdminUsers() {
     }
   };
 
+  const declineReactivation = async (user) => {
+    setActingOn(user._id);
+    try {
+      await api.put(`/users/${user._id}/reactivation-request/decline`);
+      toast.success('Reactivation request declined');
+      await fetch();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to decline request');
+    } finally {
+      setActingOn(null);
+    }
+  };
+
   const decide = async (id, approve) => {
     setActingOn(id);
     try {
@@ -179,7 +192,12 @@ export default function AdminUsers() {
                 ) : isRejected ? (
                   <span className="badge bg-red-500/20 text-red-400 text-xs">Rejected</span>
                 ) : (
-                  <span className={`badge text-xs ${u.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{u.isActive ? 'Active' : 'Inactive'}</span>
+                  <span className="flex items-center gap-2">
+                    <span className={`badge text-xs ${u.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{u.isActive ? 'Active' : 'Inactive'}</span>
+                    {!u.isActive && u.reactivationRequest?.pending && (
+                      <span className="badge text-xs bg-yellow-500/20 text-yellow-400">Reactivation requested</span>
+                    )}
+                  </span>
                 )}
 
                 <div className="flex items-center gap-4">
@@ -199,6 +217,13 @@ export default function AdminUsers() {
                     title={u.isActive ? 'Deactivate account' : 'Activate account'}
                     className="text-white/40 hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-wait">
                     {u.isActive ? <ToggleRight className="w-5 h-5 text-green-400" /> : <ToggleLeft className="w-5 h-5" />}
+                  </button>
+                )}
+                {!u.isActive && u.reactivationRequest?.pending && (
+                  <button onClick={() => declineReactivation(u)} disabled={actingOn === u._id}
+                    className="text-red-400 hover:text-red-300 transition-colors disabled:opacity-40"
+                    title="Decline reactivation request" aria-label="Decline reactivation request">
+                    <X className="w-5 h-5" />
                   </button>
                 )}
                 <button onClick={() => setViewingUser(u)}
@@ -250,7 +275,12 @@ export default function AdminUsers() {
                     ) : isRejected ? (
                       <span className="badge bg-red-500/20 text-red-400">Rejected</span>
                     ) : (
-                      <span className={`badge ${u.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{u.isActive ? 'Active' : 'Inactive'}</span>
+                      <div className="flex flex-col items-start gap-1">
+                        <span className={`badge ${u.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{u.isActive ? 'Active' : 'Inactive'}</span>
+                        {!u.isActive && u.reactivationRequest?.pending && (
+                          <span className="badge bg-yellow-500/20 text-yellow-400">Reactivation requested</span>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="py-3">
@@ -271,6 +301,13 @@ export default function AdminUsers() {
                     title={u.isActive ? 'Deactivate account' : 'Activate account'}
                     className="text-white/40 hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-wait">
                         {u.isActive ? <ToggleRight className="w-5 h-5 text-green-400" /> : <ToggleLeft className="w-5 h-5" />}
+                      </button>
+                    )}
+                    {!u.isActive && u.reactivationRequest?.pending && (
+                      <button onClick={() => declineReactivation(u)} disabled={actingOn === u._id}
+                        className="text-red-400 hover:text-red-300 transition-colors disabled:opacity-40"
+                        title="Decline reactivation request" aria-label="Decline reactivation request">
+                        <X className="w-5 h-5" />
                       </button>
                     )}
                     <button onClick={() => setViewingUser(u)}
@@ -312,6 +349,7 @@ export default function AdminUsers() {
             ['Facebook', v.socialFacebook],
             ['Instagram', v.socialInstagram],
             ['Joined', v.createdAt ? formatDate(v.createdAt) : ''],
+            ['Reactivation request', !v.isActive && v.reactivationRequest?.pending ? (v.reactivationRequest.message || 'Requested (no message)') : ''],
           ].filter(([, val]) => val !== undefined && val !== null && String(val).trim() !== '');
           return (
             <div className="space-y-5">

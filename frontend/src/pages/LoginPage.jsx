@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
+import api from '../services/api';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -14,6 +15,35 @@ export default function LoginPage() {
   const { login, loginWithGoogle } = useAuthStore();
   const navigate = useNavigate();
   const googleBtnRef = useRef(null);
+
+  // Deactivated-account flow: shows a "request reactivation" form under the login box
+  const [deactivated, setDeactivated] = useState(false);
+  const [reqEmail, setReqEmail] = useState('');
+  const [reqMessage, setReqMessage] = useState('');
+  const [reqSending, setReqSending] = useState(false);
+  const [reqSent, setReqSent] = useState(false);
+
+  const isDeactivatedError = (err) => {
+    const d = err.response?.data;
+    return d?.code === 'ACCOUNT_DEACTIVATED' || /deactivat/i.test(d?.message || '');
+  };
+
+  const submitReactivation = async (e) => {
+    e.preventDefault();
+    setReqSending(true);
+    try {
+      const { data } = await api.post('/users/reactivation-request', {
+        email: reqEmail.trim(),
+        message: reqMessage.trim(),
+      });
+      toast.success(data.message || 'Request sent');
+      setReqSent(true);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not send your request');
+    } finally {
+      setReqSending(false);
+    }
+  };
 
   const goToRoleHome = (user) => {
     setTimeout(() => {
@@ -32,6 +62,9 @@ export default function LoginPage() {
       goToRoleHome(user);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed');
+      if (isDeactivatedError(err)) {
+        setDeactivated(true); setReqSent(false); setReqEmail(email);
+      }
       setLoading(false);
     }
   };
@@ -43,6 +76,9 @@ export default function LoginPage() {
       goToRoleHome(user);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Google sign-in failed');
+      if (isDeactivatedError(err)) {
+        setDeactivated(true); setReqSent(false);
+      }
     }
   };
 
@@ -166,6 +202,30 @@ export default function LoginPage() {
           <div className="flex justify-center w-full overflow-hidden" style={{ colorScheme: 'light' }}>
             <div ref={googleBtnRef} />
           </div>
+
+          {deactivated && (
+            <div className="mt-5 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 space-y-3">
+              <p className="text-yellow-400 text-sm font-medium">This account has been deactivated.</p>
+              {reqSent ? (
+                <p className="text-white/60 text-sm">
+                  Your request was sent to an administrator. You'll be able to sign in again once it's approved.
+                </p>
+              ) : (
+                <form onSubmit={submitReactivation} className="space-y-3">
+                  <p className="text-white/50 text-xs">Ask an administrator to turn it back on.</p>
+                  <input type="email" className="input" placeholder="Your account email" maxLength={100}
+                    value={reqEmail} onChange={e => setReqEmail(e.target.value)} required />
+                  <textarea className="input min-h-[80px] resize-none" maxLength={500}
+                    placeholder="Message to the admin (optional)"
+                    value={reqMessage} onChange={e => setReqMessage(e.target.value)} />
+                  <button type="submit" disabled={reqSending}
+                    className="w-full py-2.5 bg-white text-black font-bold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50 text-xs tracking-wider uppercase">
+                    {reqSending ? 'Sending...' : 'Request Reactivation'}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
 
           <div className="mt-5 pt-5 border-t border-white/10 text-center">
             <p className="text-white/40 text-sm">
