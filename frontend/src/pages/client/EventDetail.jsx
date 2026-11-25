@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MessageSquare, Download, CreditCard, Users, Send, XCircle, AlertTriangle, RotateCcw, Star, CheckCircle2, Wrench, X, Paperclip } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Download, CreditCard, Users, Send, XCircle, AlertTriangle, RotateCcw, Star, CheckCircle2, Wrench, X, Paperclip, HelpCircle, ChevronRight } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingSpinner, StatusBadge } from '../../components/shared';
 import ServiceBadges from '../../components/shared/ServiceBadges';
@@ -33,6 +33,39 @@ const CANCEL_REASONS = [
   'Event was postponed',
   'Personal / family emergency',
   'Others',
+];
+
+// ── FAQ recommendations shown in the client's private chat with Admin ─────────
+// Edit this list to change the suggested questions/answers.
+const CLIENT_FAQS = [
+  {
+    q: 'How does the payment work?',
+    a: 'Once your quotation is approved, a 50% downpayment is required before we assign your team. The remaining balance is paid after the event, and your deliverables are released once it is settled.',
+  },
+  {
+    q: 'Can I pay in cash?',
+    a: 'Yes. You can choose the cash option when paying. Our team will confirm the arrangement, and you will receive an official receipt once payment is received.',
+  },
+  {
+    q: 'Can I cancel or get a refund?',
+    a: 'You can request a cancellation from the "Cancel Event" button on this page. Our team will review it. Please note that payments already made are non-refundable.',
+  },
+  {
+    q: 'Can I change my event date or location?',
+    a: 'Date or location changes depend on our team’s and crew’s availability. Please message the admin directly with your new details so we can check.',
+  },
+  {
+    q: 'When will my team be assigned?',
+    a: 'Your team is assigned after the downpayment (or cash arrangement) is confirmed. You will see them under the Team tab and be notified once assigned.',
+  },
+  {
+    q: 'When will I receive my deliverables?',
+    a: 'Deliverables appear in the Deliverables tab after the event is completed and the remaining balance is fully paid.',
+  },
+  {
+    q: 'How do I reach my assigned crew?',
+    a: 'Once your team is assigned, each crew member appears in your Direct Messages list so you can message them privately about on-site details.',
+  },
 ];
 
 // ── Cancel Confirmation Modal ─────────────────────────────────────────────────
@@ -494,6 +527,20 @@ function DirectMessagesPopup({ event, onSend, myRole, locked }) {
   const active   = threads.length === 1 ? threads[0] : (activeIdx !== null ? threads[activeIdx] : null);
   const showList = threads.length > 1 && activeIdx === null;
 
+  // Clients see FAQ recommendations first in their private chat with Admin
+  // (the thread that isn't tied to a specific freelancer). They can still
+  // switch to the live chat with "Chat with admin".
+  const isAdminThread = myRole === 'client' && !!active && !active.freelancerId;
+  const [faqMode, setFaqMode]         = useState(true);
+  const [selectedFaq, setSelectedFaq] = useState(null);
+  const showFaq = isAdminThread && faqMode && !locked;
+
+  // Return to the FAQ list whenever the popup is reopened or the thread changes.
+  useEffect(() => {
+    setFaqMode(true);
+    setSelectedFaq(null);
+  }, [open, activeIdx]);
+
   // Jump to the latest message whenever a conversation is opened, switched
   // to, or grows with a new message — instead of sitting at the top.
   useEffect(() => {
@@ -656,9 +703,92 @@ function DirectMessagesPopup({ event, onSend, myRole, locked }) {
                 );
               })}
             </div>
+          ) : showFaq ? (
+            // ── FAQ recommendations — shown before chatting with Admin ──────
+            <div className="flex-1 overflow-y-auto pr-1" style={{ maxHeight: '380px' }}>
+              {selectedFaq === null ? (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <HelpCircle className="w-4 h-4 text-primary flex-shrink-0" />
+                    <p className="text-white/70 text-xs">
+                      Hi! Here are some common questions. Tap one for a quick answer.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    {CLIENT_FAQS.map((f, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setSelectedFaq(i)}
+                        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-primary/40 hover:bg-white/10 transition-colors text-left"
+                      >
+                        <span className="text-white/80 text-sm">{f.q}</span>
+                        <ChevronRight className="w-4 h-4 text-white/30 flex-shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFaq(null)}
+                    className="flex items-center gap-1 text-white/50 hover:text-white text-xs"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" /> All questions
+                  </button>
+                  <div className="flex justify-end">
+                    <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-br-md bg-primary text-white text-sm">
+                      {CLIENT_FAQS[selectedFaq].q}
+                    </div>
+                  </div>
+                  <div className="flex justify-start">
+                    <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-bl-md bg-white/10 text-white/90 text-sm leading-relaxed">
+                      {CLIENT_FAQS[selectedFaq].a}
+                    </div>
+                  </div>
+                  <p className="text-white/40 text-xs">Did this answer your question?</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFaq(null)}
+                      className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white/70 text-xs font-medium hover:bg-white/10 transition-colors"
+                    >
+                      Yes, thanks
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFaqMode(false)}
+                      className="flex-1 px-3 py-2 rounded-xl bg-primary/20 border border-primary/40 text-primary text-xs font-medium hover:bg-primary/30 transition-colors"
+                    >
+                      No, chat with admin
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setFaqMode(false)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4" /> Chat with admin
+                </button>
+              </div>
+            </div>
           ) : (
             // ── Open conversation — Messenger-style bubbles ─────────────────
             <>
+              {isAdminThread && !locked && (
+                <button
+                  type="button"
+                  onClick={() => { setFaqMode(true); setSelectedFaq(null); }}
+                  className="flex items-center gap-1 text-primary hover:text-primary/80 text-xs mb-2 self-start"
+                >
+                  <HelpCircle className="w-3.5 h-3.5" /> Browse common questions
+                </button>
+              )}
               <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-3 mb-3 pr-1" style={{ maxHeight: '320px' }}>
                 {(active?.messages || []).length === 0 && (
                   <p className="text-white/30 text-xs text-center py-6">No messages yet</p>
