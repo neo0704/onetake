@@ -149,8 +149,34 @@ function daysBefore(str, n) {
   return ymd(d);
 }
 
-function DatePickerField({ value, onChange, minDate, maxDate, bookedDates, error, disabled, placeholder = 'Select a date' }) {
+// ── Typable-date helpers (MM/DD/YYYY) ───────────────────────────────────────
+function formatTyped(raw) {
+  const d = raw.replace(/\D/g, '').slice(0, 8);
+  let out = d.slice(0, 2);
+  if (d.length > 2) out += '/' + d.slice(2, 4);
+  if (d.length > 4) out += '/' + d.slice(4, 8);
+  return out;
+}
+function ymdToTyped(str) {
+  if (!str) return '';
+  const [y, m, d] = str.split('-');
+  return `${m}/${d}/${y}`;
+}
+// "MM/DD/YYYY" → "YYYY-MM-DD", or null if it isn't a real calendar date
+function typedToYmd(text) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);
+  if (!m) return null;
+  const [, mm, dd, yyyy] = m.map(Number);
+  if (yyyy < 1000) return null;
+  const dt = new Date(yyyy, mm - 1, dd);
+  if (dt.getFullYear() !== yyyy || dt.getMonth() !== mm - 1 || dt.getDate() !== dd) return null;
+  return ymd(dt);
+}
+
+function DatePickerField({ value, onChange, minDate, maxDate, bookedDates, error, disabled, placeholder = 'MM/DD/YYYY' }) {
   const [open, setOpen] = useState(false);
+  const [text, setText] = useState(() => ymdToTyped(value));
+  const [typeError, setTypeError] = useState('');
   const [viewDate, setViewDate] = useState(() => parseYMD(value || minDate || ymd(new Date())));
   const wrapperRef = useRef(null);
 
@@ -167,6 +193,13 @@ function DatePickerField({ value, onChange, minDate, maxDate, bookedDates, error
   useEffect(() => {
     if (!open) setViewDate(parseYMD(value || minDate || ymd(new Date())));
   }, [value, minDate, open]);
+
+  // Keep the typed text in sync when the value changes from outside the
+  // input (calendar click, parent clearing it, etc.)
+  useEffect(() => {
+    setText(ymdToTyped(value));
+    if (value) setTypeError('');
+  }, [value]);
 
   const minD     = minDate ? parseYMD(minDate) : null;
   const maxD     = maxDate ? parseYMD(maxDate) : null;
@@ -185,23 +218,58 @@ function DatePickerField({ value, onChange, minDate, maxDate, bookedDates, error
   const monthLabel = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const goMonth = (delta) => setViewDate(new Date(year, month + delta, 1));
 
-  const displayLabel = value
-    ? parseYMD(value).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-    : placeholder;
+  const handleTyped = (e) => {
+    const next = formatTyped(e.target.value);
+    setText(next);
+    setTypeError('');
+    if (next.length < 10) return;
+
+    const dStr = typedToYmd(next);
+    if (!dStr) { setTypeError('Please enter a valid date (MM/DD/YYYY).'); return; }
+    const d = parseYMD(dStr);
+    if (minD && d < minD)              { setTypeError('That date is too soon. Please choose a later date.'); return; }
+    if (maxD && d > maxD)              { setTypeError('That date is too late. Please choose an earlier date.'); return; }
+    if (bookedDates?.has(dStr))        { setTypeError('That date is already booked. Please choose another date.'); return; }
+
+    setViewDate(new Date(d.getFullYear(), d.getMonth(), 1));
+    onChange(dStr);
+  };
+
+  // Anything that isn't a complete, valid date snaps back to the last valid
+  // value on blur, so the text box never disagrees with the form's state.
+  const handleBlur = () => setText(ymdToTyped(value));
 
   return (
     <div className="relative" ref={wrapperRef}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setOpen(o => !o)}
-        className={`input w-full flex items-center justify-between text-left
+      <div
+        className={`input w-full flex items-center gap-2
           ${disabled ? 'opacity-40 cursor-not-allowed' : ''}
-          ${error ? 'border-red-500/60 focus:border-red-500' : ''}`}
+          ${error || typeError ? 'border-red-500/60' : 'focus-within:border-primary/60'}`}
       >
-        <span className={value ? 'text-white' : 'text-white/30'}>{displayLabel}</span>
-        <Calendar className="w-4 h-4 text-white/40 flex-shrink-0" />
-      </button>
+        <input
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={10}
+          disabled={disabled}
+          value={text}
+          placeholder={placeholder}
+          onChange={handleTyped}
+          onBlur={handleBlur}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); setOpen(false); } }}
+          className="flex-1 min-w-0 bg-transparent outline-none text-white placeholder:text-white/30"
+        />
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => !disabled && setOpen(o => !o)}
+          aria-label="Open calendar"
+          className="flex-shrink-0 text-white/40 hover:text-white transition-colors"
+        >
+          <Calendar className="w-4 h-4" />
+        </button>
+      </div>
+      {typeError && <p className="text-red-400 text-xs mt-1">{typeError}</p>}
 
       {open && !disabled && (
         <div className="card absolute z-50 mt-2 w-[300px] max-w-[85vw] shadow-2xl">
@@ -782,7 +850,6 @@ export default function ClientInquiry() {
                             maxDate={latestAllowed || undefined}
                             bookedDates={fullyBookedMeetingDates}
                             disabled={!form.eventDate}
-                            placeholder="Select a date"
                           />
                           {!form.eventDate
                             ? <p className="text-white/30 text-xs mt-1">Set an event date first</p>

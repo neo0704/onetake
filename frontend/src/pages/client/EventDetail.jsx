@@ -62,10 +62,6 @@ const CLIENT_FAQS = [
     q: 'When will I receive my deliverables?',
     a: 'Deliverables appear in the Deliverables tab after the event is completed and the remaining balance is fully paid.',
   },
-  {
-    q: 'How do I reach my assigned crew?',
-    a: 'Once your team is assigned, each crew member appears in your Direct Messages list so you can message them privately about on-site details.',
-  },
 ];
 
 // ── Cancel Confirmation Modal ─────────────────────────────────────────────────
