@@ -34,14 +34,37 @@ const severityStyles = {
 };
 
 // Which severity each notification type belongs to.
+// Rule of thumb: done / good = green, needs someone to act = yellow, failed / denied = red.
+// Covers every type allowed by the server's Notification model.
 const typeSeverity = {
+  // success
+  needs_assessment_scheduled: 'success',
+  quotation_approved: 'success',
   payment_verified: 'success',
   event_confirmed: 'success',
-  event_completed: 'success',
   freelancer_assigned: 'success',
+  event_started: 'success',
+  event_completed: 'success',
+  deliverable_uploaded: 'success',
   meeting_scheduled: 'success',
+  equipment_approved: 'success',
+
+  // warning (waiting on someone)
+  inquiry_received: 'warning',
   quotation_sent: 'warning',
-  payment_rejected: 'error'
+  quotation_comment: 'warning',
+  payment_submitted: 'warning',
+  final_payment_due: 'warning',
+  event_reminder: 'warning',
+  message_received: 'warning',
+  meeting_requested: 'warning',
+  general: 'warning',
+
+  // error
+  quotation_rejected: 'error',
+  payment_rejected: 'error',
+  equipment_rejected: 'error',
+  meeting_declined: 'error'
 };
 
 const getSeverity = (notif) =>
