@@ -78,7 +78,6 @@ router.put('/:id/status', protect, authorize('admin'), ctrl.updateStatus);
 router.put('/:id/assign', protect, authorize('admin'), ctrl.assignResources);
 router.patch('/:id/messaging-settings', protect, authorize('admin'), ctrl.updateMessagingSettings);
 router.post('/:id/messages', protect, messageUpload.array('attachments', 5), ctrl.sendMessage);
-router.post('/:id/faq', protect, authorize('client'), ctrl.sendFaqReply);
 router.post('/:id/comments', protect, ctrl.addComment);
 router.put('/:id/checklist', protect, ctrl.updateChecklist);
 router.post('/:id/checkin', protect, authorize('freelancer'), upload.array('proofPhotos', 5), uploadProofToCloudinary, ctrl.checkIn);
