@@ -44,15 +44,15 @@ const CLIENT_FAQS = [
   },
   {
     q: 'Can I pay in cash?',
-    a: 'Yes. You can choose the cash option when paying. Our team will confirm the arrangement, and you will receive an official receipt once payment is received.',
+    a: 'Yes. You can choose the cash option when paying. Our team will confirm the arrangement, and you will settle the payment directly with them.',
   },
   {
     q: 'Can I cancel or get a refund?',
     a: 'You can request a cancellation from the "Cancel Event" button on this page. Our team will review it. Please note that payments already made are non-refundable.',
   },
   {
-    q: 'Can I change my event date or location?',
-    a: 'Date or location changes depend on our team’s and crew’s availability. Please message the admin directly with your new details so we can check.',
+    q: 'Can I change my event details?',
+    a: 'Event details cannot be changed once the inquiry has been sent. If you can no longer proceed with the current details, you may request a cancellation and submit a new inquiry.',
   },
   {
     q: 'When will my team be assigned?',
@@ -711,7 +711,7 @@ function DirectMessagesPopup({ event, onSend, myRole, locked }) {
                   <div className="flex items-center gap-2 mb-2">
                     <HelpCircle className="w-4 h-4 text-primary flex-shrink-0" />
                     <p className="text-white/70 text-xs">
-                      Hi! Here are some common questions. Tap one for a quick answer.
+                      Hi! I'm the admin's automated assistant. Tap a question for an instant answer.
                     </p>
                   </div>
                   <div className="space-y-1.5">
@@ -743,8 +743,11 @@ function DirectMessagesPopup({ event, onSend, myRole, locked }) {
                     </div>
                   </div>
                   <div className="flex justify-start">
-                    <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-bl-md bg-white/10 text-white/90 text-sm leading-relaxed">
-                      {CLIENT_FAQS[selectedFaq].a}
+                    <div className="max-w-[85%] flex flex-col items-start">
+                      <span className="text-[10px] text-white/40 mb-1 px-1">Admin · Automated reply</span>
+                      <div className="px-3 py-2 rounded-2xl rounded-bl-md bg-white/10 text-white/90 text-sm leading-relaxed">
+                        {CLIENT_FAQS[selectedFaq].a}
+                      </div>
                     </div>
                   </div>
                   <p className="text-white/40 text-xs">Did this answer your question?</p>

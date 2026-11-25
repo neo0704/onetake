@@ -171,6 +171,8 @@ const eventSchema = new mongoose.Schema({
       senderName: { type: String, default: '' },
       senderRole: { type: String, default: '' },
       content:    { type: String, default: '' },
+      // true for canned FAQ answers posted on the admin's behalf (client FAQ flow)
+      isAutomated: { type: Boolean, default: false },
       attachments: [{
         url:  { type: String, required: true },
         name: { type: String, default: '' },

@@ -1262,6 +1262,101 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
+// ── Client FAQ → automated admin reply ───────────────────────────────────────
+// The answers live here (server-side) so a client can't post arbitrary text as
+// "admin". Keep the ids and questions in sync with CLIENT_FAQS in the client
+// EventDetail.jsx.
+const CLIENT_FAQS = {
+  payment: {
+    q: 'How does the payment work?',
+    a: 'Once your quotation is approved, a 50% downpayment is required before we assign your team. The remaining balance is paid after the event, and your deliverables are released once it is settled.',
+  },
+  cash: {
+    q: 'Can I pay in cash?',
+    a: 'Yes. You can choose the cash option when paying. Our team will confirm the arrangement, and you will settle the payment directly with them.',
+  },
+  cancel: {
+    q: 'Can I cancel or get a refund?',
+    a: 'You can request a cancellation from the "Cancel Event" button on this page. Our team will review it. Please note that payments already made are non-refundable.',
+  },
+  change: {
+    q: 'Can I change my event details?',
+    a: 'Event details cannot be changed once the inquiry has been sent. If you can no longer proceed with the current details, you may request a cancellation and submit a new inquiry.',
+  },
+  team: {
+    q: 'When will my team be assigned?',
+    a: 'Your team is assigned after the downpayment (or cash arrangement) is confirmed. You will see them under the Team tab and be notified once assigned.',
+  },
+  deliverables: {
+    q: 'When will I receive my deliverables?',
+    a: 'Deliverables appear in the Deliverables tab after the event is completed and the remaining balance is fully paid.',
+  },
+  crew: {
+    q: 'How do I reach my assigned crew?',
+    a: 'Once your team is assigned, each crew member appears in your Direct Messages list so you can message them privately about on-site details.',
+  },
+};
+
+// Body: { faqId }. Saves the client's question and the canned admin answer into
+// the client_admin thread so the admin can see what was already answered.
+exports.sendFaqReply = async (req, res) => {
+  try {
+    const faq = CLIENT_FAQS[req.body.faqId];
+    if (!faq) return res.status(400).json({ success: false, message: 'Unknown FAQ' });
+
+    const event = await Event.findById(req.params.id);
+    if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+
+    if (event.client?.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+    if (event.status === 'completed_paid') {
+      return res.status(403).json({ success: false, message: 'Messaging is closed — this project is complete and fully paid.' });
+    }
+
+    let convo = event.conversations.find(c => c.type === 'client_admin');
+    if (!convo) {
+      event.conversations.push({ type: 'client_admin', messages: [] });
+      convo = event.conversations[event.conversations.length - 1];
+    }
+
+    const now = new Date();
+    convo.messages.push({
+      sender:     req.user.id,
+      senderName: req.user.name,
+      senderRole: 'client',
+      content:    faq.q,
+      createdAt:  now,
+    });
+    convo.messages.push({
+      // no `sender`: this is a canned reply, not written by a specific admin
+      senderName:  'Admin',
+      senderRole:  'admin',
+      content:     faq.a,
+      isAutomated: true,
+      createdAt:   new Date(now.getTime() + 1), // keeps the answer after the question
+    });
+    await event.save();
+
+    // Tell admins the client asked something (the answer is already visible to them)
+    await notifyMessageRecipients({
+      event, convoType: 'client_admin', fId: null,
+      sender: { id: req.user.id, name: req.user.name, role: 'client' },
+      content: faq.q, hasAttachments: false,
+    });
+
+    try {
+      getIO().to(`event_${event._id}`).emit('new_message', {
+        eventId: event._id, threadType: 'client_admin', freelancerId: null,
+      });
+    } catch {}
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // ── Update checklist ──────────────────────────────────────────────────────────
 exports.updateChecklist = async (req, res) => {
   try {
