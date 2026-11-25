@@ -6,4 +6,5 @@ router.get('/', protect, ctrl.getFreelancers);
 router.get('/my-schedule', protect, authorize('freelancer'), ctrl.getMySchedule);
 router.get('/:id', protect, ctrl.getFreelancer);
 router.get('/:id/events', protect, ctrl.getFreelancerEvents);
+router.put('/:id', protect, authorize('admin'), ctrl.updateFreelancer);
 module.exports = router;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Plus, X, CheckCircle, Phone, MapPin, Calendar, Mail } from 'lucide-react';
+import { Users, Plus, X, CheckCircle, Phone, MapPin, Calendar, Mail, Pencil } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingSpinner, EmptyState, PageHeader, Modal } from '../../components/shared';
 import toast from 'react-hot-toast';
@@ -68,7 +68,7 @@ function FreelancerCard({ f, onSelect }) {
   );
 }
 
-function FreelancerDetailModal({ f, onClose }) {
+function FreelancerDetailModal({ f, onClose, onEdit }) {
   const [showFullImage, setShowFullImage] = useState(false);
   const [imgError, setImgError] = useState(false);
 
@@ -156,7 +156,14 @@ function FreelancerDetailModal({ f, onClose }) {
           </div>
         )}
 
-        <button onClick={onClose} className="btn-secondary w-full justify-center">Close</button>
+        <div className="flex flex-col-reverse sm:flex-row gap-3">
+          <button onClick={onClose} className="btn-secondary flex-1 justify-center">Close</button>
+          {onEdit && (
+            <button onClick={() => onEdit(f)} className="btn-primary flex-1 justify-center">
+              <Pencil className="w-4 h-4" /> Edit
+            </button>
+          )}
+        </div>
       </div>
 
       {showFullImage && src && (
@@ -190,6 +197,9 @@ export default function AdminFreelancers() {
   const [selectedFree, setSelectedFree] = useState(null);
   const [availFilter,  setAvailFilter]  = useState('all');
   const [form, setForm] = useState({ name: '', email: '', password: '', skills: [], phone: '' });
+  const [editing,  setEditing]  = useState(null);   // freelancer being edited
+  const [editForm, setEditForm] = useState(null);
+  const [saving,   setSaving]   = useState(false);
 
   const fetch = async () => {
     const { data } = await api.get('/users?role=freelancer');
@@ -211,6 +221,52 @@ export default function AdminFreelancers() {
       fetch();
     } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
   };
+
+  const openEdit = (f) => {
+    setSelectedFree(null);   // avoid stacking two modals
+    setEditing(f);
+    setEditForm({
+      name:             f.name || '',
+      email:            f.email || '',
+      phone:            f.phone || '',
+      age:              f.age ?? '',
+      address:          f.address || '',
+      rate:             f.rate ?? '',
+      rateType:         f.rateType || 'hourly',
+      skillsText:       (f.skills || []).join(', '),
+      bio:              f.bio || '',
+      availability:     f.availability || 'available',
+      emergencyContact: f.emergencyContact || '',
+      emergencyPhone:   f.emergencyPhone || '',
+    });
+  };
+
+  const closeEdit = () => { setEditing(null); setEditForm(null); };
+
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    if (!editing || saving) return;
+    setSaving(true);
+    try {
+      const { skillsText, ...rest } = editForm;
+      const payload = {
+        ...rest,
+        skills: skillsText.split(',').map(s => s.trim()).filter(Boolean),
+      };
+      const { data } = await api.put(`/freelancers/${editing._id}`, payload);
+      const merged = { ...editing, ...data.freelancer };
+      setFreelancers(list => list.map(x => (x._id === merged._id ? merged : x)));
+      toast.success('Freelancer updated!');
+      closeEdit();
+      setSelectedFree(merged);   // reopen the profile with the fresh data
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update freelancer');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const setEdit = (key) => (e) => setEditForm(f => ({ ...f, [key]: e.target.value }));
 
   const filtered = availFilter === 'all'
     ? freelancers
@@ -256,7 +312,7 @@ export default function AdminFreelancers() {
       )}
 
       {/* Detail modal */}
-      <FreelancerDetailModal f={selectedFree} onClose={() => setSelectedFree(null)} />
+      <FreelancerDetailModal f={selectedFree} onClose={() => setSelectedFree(null)} onEdit={openEdit} />
 
       {/* Add freelancer modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Freelancer">
@@ -283,6 +339,83 @@ export default function AdminFreelancers() {
             <button type="submit" className="btn-primary flex-1 justify-center">Create Account</button>
           </div>
         </form>
+      </Modal>
+
+      {/* Edit freelancer modal */}
+      <Modal isOpen={!!editing} onClose={closeEdit} title="Edit Freelancer">
+        {editForm && (
+          <form onSubmit={saveEdit} className="space-y-4">
+            <div>
+              <label className="label">Full Name *</label>
+              <input className="input" value={editForm.name} onChange={setEdit('name')} required />
+            </div>
+            <div>
+              <label className="label">Email *</label>
+              <input type="email" className="input" value={editForm.email} onChange={setEdit('email')} required />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="label">Phone</label>
+                <input className="input" value={editForm.phone} onChange={setEdit('phone')} placeholder="+63 9XX XXX XXXX" />
+              </div>
+              <div>
+                <label className="label">Age</label>
+                <input type="number" min="0" className="input" value={editForm.age} onChange={setEdit('age')} />
+              </div>
+            </div>
+            <div>
+              <label className="label">Address</label>
+              <input className="input" value={editForm.address} onChange={setEdit('address')} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="label">Rate (₱)</label>
+                <input type="number" min="0" className="input" value={editForm.rate} onChange={setEdit('rate')} />
+              </div>
+              <div>
+                <label className="label">Rate Type</label>
+                <select className="input" value={editForm.rateType} onChange={setEdit('rateType')}>
+                  <option value="hourly">Per hour</option>
+                  <option value="fixed">Per project</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="label">Availability</label>
+              <select className="input" value={editForm.availability} onChange={setEdit('availability')}>
+                {Object.entries(AVAIL_CONFIG).map(([val, { label }]) => (
+                  <option key={val} value={val}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Skills</label>
+              <input className="input" value={editForm.skillsText} onChange={setEdit('skillsText')}
+                placeholder="Photography, Videography, Editing" />
+              <p className="text-white/30 text-xs mt-1">Separate skills with commas.</p>
+            </div>
+            <div>
+              <label className="label">Bio</label>
+              <textarea className="input min-h-[80px]" value={editForm.bio} onChange={setEdit('bio')} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="label">Emergency Contact</label>
+                <input className="input" value={editForm.emergencyContact} onChange={setEdit('emergencyContact')} />
+              </div>
+              <div>
+                <label className="label">Emergency Phone</label>
+                <input className="input" value={editForm.emergencyPhone} onChange={setEdit('emergencyPhone')} />
+              </div>
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row gap-3">
+              <button type="button" onClick={closeEdit} className="btn-secondary flex-1 justify-center">Cancel</button>
+              <button type="submit" disabled={saving} className="btn-primary flex-1 justify-center disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );
