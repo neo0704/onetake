@@ -4,16 +4,48 @@ import { Bell, CheckCheck, X } from 'lucide-react';
 import useNotificationStore from '../../store/notificationStore';
 import { timeAgo } from '../../utils/helpers';
 
-const typeColors = {
-  payment_verified: 'bg-green-500/20 text-green-400',
-  payment_rejected: 'bg-red-500/20 text-red-400',
-  quotation_sent: 'bg-yellow-500/20 text-yellow-400',
-  event_confirmed: 'bg-green-500/20 text-green-400',
-  event_completed: 'bg-amber-500/20 text-amber-400',
-  freelancer_assigned: 'bg-blue-500/20 text-blue-400',
-  meeting_scheduled: 'bg-purple-500/20 text-purple-400',
-  default: 'bg-white/10 text-white/60'
+// Severity styles: green = success, yellow = warning, red = error.
+// (Full class names are written out so Tailwind can detect them.)
+const severityStyles = {
+  success: {
+    badge: 'bg-green-500/20 text-green-400',
+    border: 'border-l-green-500',
+    row: 'bg-green-500/5',
+    dot: 'bg-green-500'
+  },
+  warning: {
+    badge: 'bg-yellow-500/20 text-yellow-400',
+    border: 'border-l-yellow-500',
+    row: 'bg-yellow-500/5',
+    dot: 'bg-yellow-500'
+  },
+  error: {
+    badge: 'bg-red-500/20 text-red-400',
+    border: 'border-l-red-500',
+    row: 'bg-red-500/5',
+    dot: 'bg-red-500'
+  },
+  default: {
+    badge: 'bg-white/10 text-white/60',
+    border: 'border-l-transparent',
+    row: 'bg-primary/5',
+    dot: 'bg-primary'
+  }
 };
+
+// Which severity each notification type belongs to.
+const typeSeverity = {
+  payment_verified: 'success',
+  event_confirmed: 'success',
+  event_completed: 'success',
+  freelancer_assigned: 'success',
+  meeting_scheduled: 'success',
+  quotation_sent: 'warning',
+  payment_rejected: 'error'
+};
+
+const getSeverity = (notif) =>
+  (severityStyles[notif.severity] && notif.severity) || typeSeverity[notif.type] || 'default';
 
 export default function NotificationPanel({ onClose }) {
   const { notifications, markRead, markAllRead, fetchNotifications } = useNotificationStore();
@@ -109,22 +141,24 @@ export default function NotificationPanel({ onClose }) {
             <p className="text-white/40">No notifications yet</p>
           </div>
         ) : (
-          notifications.map((notif) => (
+          notifications.map((notif) => {
+            const sev = severityStyles[getSeverity(notif)];
+            return (
             <div
               key={notif._id}
               onClick={() => handleNotificationClick(notif)}
-              className={`px-4 py-3 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-all
-                ${!notif.isRead ? 'bg-primary/5' : ''}`}
+              className={`px-4 py-3 border-b border-white/5 border-l-4 ${sev.border} hover:bg-white/5 cursor-pointer transition-all
+                ${!notif.isRead ? sev.row : ''}`}
             >
               <div className="flex gap-3">
-                <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!notif.isRead ? 'bg-primary animate-pulse' : 'bg-transparent'}`} />
+                <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!notif.isRead ? `${sev.dot} animate-pulse` : 'bg-transparent'}`} />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-white leading-tight truncate">{notif.title}</p>
                     <span
                       className={`shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-medium uppercase tracking-wide ${
-                        typeColors[notif.type] || typeColors.default
+                        sev.badge
                       }`}
                     >
                       {(notif.type || 'update').replace(/_/g, ' ')}
@@ -137,7 +171,8 @@ export default function NotificationPanel({ onClose }) {
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
